@@ -1,0 +1,59 @@
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/db';
+
+// GET /api/customers/[id]
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const customer = await prisma.customer.findUnique({
+      where: { id: params.id },
+      include: {
+        group: true,
+        transactions: { orderBy: { date: 'desc' }, take: 50 },
+      },
+    });
+    if (!customer) {
+      return NextResponse.json({ error: 'Mijoz topilmadi' }, { status: 404 });
+    }
+    return NextResponse.json(customer);
+  } catch (error) {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PUT /api/customers/[id]
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const body = await req.json();
+    const customer = await prisma.customer.update({
+      where: { id: params.id },
+      data: {
+        fullName: body.fullName,
+        companyName: body.companyName,
+        phone: body.phone,
+        region: body.region,
+        status: body.status,
+        groupId: body.groupId,
+      },
+      include: { group: true },
+    });
+    return NextResponse.json(customer);
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      return NextResponse.json({ error: 'Mijoz topilmadi' }, { status: 404 });
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE /api/customers/[id]
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    await prisma.customer.delete({ where: { id: params.id } });
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    if (error.code === 'P2025') {
+      return NextResponse.json({ error: 'Mijoz topilmadi' }, { status: 404 });
+    }
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}

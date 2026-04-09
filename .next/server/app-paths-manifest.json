@@ -1,0 +1,12 @@
+{
+  "/barcode/page": "app/barcode/page.js",
+  "/warehouse/stock/page": "app/warehouse/stock/page.js",
+  "/warehouse/inventory/page": "app/warehouse/inventory/page.js",
+  "/customers/page": "app/customers/page.js",
+  "/api/stock/route": "app/api/stock/route.js",
+  "/page": "app/page.js",
+  "/api/inventory-audit/route": "app/api/inventory-audit/route.js",
+  "/api/customers/route": "app/api/customers/route.js",
+  "/customers/add/page": "app/customers/add/page.js",
+  "/api/customer-groups/route": "app/api/customer-groups/route.js"
+}

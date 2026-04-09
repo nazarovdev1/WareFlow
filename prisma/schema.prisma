@@ -1,0 +1,318 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ─── PRODUCT DOMAIN ──────────────────────────────
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Folder {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Unit {
+  id        String    @id @default(cuid())
+  name      String    // "Dona (rulon)", "m²", "Karobka"
+  shortName String    // "dona", "m²", "karobka"
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  products  Product[]
+}
+
+model Product {
+  id             String   @id @default(cuid())
+  name           String
+  sku            String?  @unique
+  barcode        String?  @unique
+  barcodeType    String   @default("EAN13") // EAN13, Code128, UPC
+  imageUrl       String?
+
+  sellPrice      Float    @default(0)
+  wholesalePrice Float    @default(0)
+  minPrice       Float    @default(0)
+
+  categoryId     String?
+  category       Category? @relation(fields: [categoryId], references: [id])
+  folderId       String?
+  folder         Folder?   @relation(fields: [folderId], references: [id])
+  unitId         String?
+  unit           Unit?     @relation(fields: [unitId], references: [id])
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  stockEntries       StockEntry[]
+  transferItems      TransferItem[]
+  inventoryAuditItems InventoryAuditItem[]
+  priceListItems     PriceListItem[]
+
+  @@index([categoryId])
+  @@index([name])
+}
+
+// ─── WAREHOUSE DOMAIN ────────────────────────────
+
+model Warehouse {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  stockEntries     StockEntry[]
+  transfersFrom    Transfer[]          @relation("TransferFrom")
+  transfersTo      Transfer[]          @relation("TransferTo")
+  inventoryAudits  InventoryAudit[]
+}
+
+model StockEntry {
+  id          String   @id @default(cuid())
+  quantity    Float    @default(0)
+  reserved    Float    @default(0)
+  costPrice   Float    @default(0)
+
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId String
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([productId, warehouseId])
+  @@index([warehouseId])
+}
+
+// ─── TRANSFER DOMAIN ─────────────────────────────
+
+enum TransferStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+}
+
+model Transfer {
+  id                String         @id @default(cuid())
+  docNumber         String         @unique
+  date              DateTime       @default(now())
+  responsiblePerson String?
+  status            TransferStatus @default(PENDING)
+
+  fromWarehouseId   String
+  fromWarehouse     Warehouse      @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
+  toWarehouseId     String
+  toWarehouse       Warehouse      @relation("TransferTo", fields: [toWarehouseId], references: [id])
+
+  items             TransferItem[]
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([date])
+}
+
+model TransferItem {
+  id         String   @id @default(cuid())
+  quantity   Float
+
+  transferId String
+  transfer   Transfer @relation(fields: [transferId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+
+  @@index([transferId])
+}
+
+// ─── INVENTORY AUDIT DOMAIN ─────────────────────
+
+enum AuditStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+model InventoryAudit {
+  id                String      @id @default(cuid())
+  docNumber         String      @unique
+  date              DateTime    @default(now())
+  responsiblePerson String?
+  status            AuditStatus @default(IN_PROGRESS)
+
+  warehouseId       String
+  warehouse         Warehouse   @relation(fields: [warehouseId], references: [id])
+
+  items             InventoryAuditItem[]
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+
+  @@index([warehouseId])
+}
+
+model InventoryAuditItem {
+  id         String         @id @default(cuid())
+  systemQty  Float
+  actualQty  Float
+  difference Float
+
+  auditId    String
+  audit      InventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product        @relation(fields: [productId], references: [id])
+
+  @@index([auditId])
+}
+
+// ─── PRICE LIST DOMAIN ──────────────────────────
+
+enum PriceListType {
+  SALE
+  PURCHASE
+}
+
+model PriceList {
+  id        String        @id @default(cuid())
+  name      String
+  type      PriceListType @default(SALE)
+  isActive  Boolean       @default(true)
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  items     PriceListItem[]
+}
+
+model PriceListItem {
+  id          String    @id @default(cuid())
+  price       Float
+
+  priceListId String
+  priceList   PriceList @relation(fields: [priceListId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product   @relation(fields: [productId], references: [id])
+
+  @@unique([priceListId, productId])
+}
+
+// ─── CUSTOMER DOMAIN ────────────────────────────
+
+model CustomerGroup {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  defaultDiscount Float    @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  customers       Customer[]
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Customer {
+  id          String         @id @default(cuid())
+  fullName    String
+  companyName String?
+  phone       String?
+  region      String?
+  status      CustomerStatus @default(ACTIVE)
+  balanceUSD  Float          @default(0)
+  balanceUZS  Float          @default(0)
+
+  groupId     String?
+  group       CustomerGroup? @relation(fields: [groupId], references: [id])
+
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  transactions CustomerTransaction[]
+
+  @@index([groupId])
+  @@index([fullName])
+}
+
+enum TransactionType {
+  DEBT
+  PAYMENT
+}
+
+model CustomerTransaction {
+  id          String          @id @default(cuid())
+  type        TransactionType
+  amount      Float
+  currency    String          @default("USD") // USD or UZS
+  date        DateTime        @default(now())
+  dueDate     DateTime?
+  description String?
+
+  customerId  String
+  customer    Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime        @default(now())
+
+  @@index([customerId])
+  @@index([date])
+}
+
+// ─── SUPPLIER DOMAIN ────────────────────────────
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+}
+
+model Supplier {
+  id            String         @id @default(cuid())
+  name          String
+  contactPerson String?
+  phone         String?
+  category      String?
+  status        SupplierStatus @default(ACTIVE)
+  balanceUSD    Float          @default(0)
+  balanceUZS    Float          @default(0)
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  transactions  SupplierTransaction[]
+
+  @@index([name])
+}
+
+model SupplierTransaction {
+  id          String          @id @default(cuid())
+  type        TransactionType
+  amount      Float
+  currency    String          @default("USD")
+  date        DateTime        @default(now())
+  dueDate     DateTime?
+  description String?
+
+  supplierId  String
+  supplier    Supplier        @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  createdAt   DateTime        @default(now())
+
+  @@index([supplierId])
+  @@index([date])
+}
