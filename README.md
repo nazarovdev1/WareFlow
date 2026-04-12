@@ -1,297 +1,371 @@
-# 🏭 WareFlow — Warehouse Management System
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=28&duration=3000&pause=1000&color=2DD4BF&center=true&vCenter=true&width=600&lines=WareFlow+%E2%80%94+Warehouse+ERP" alt="Typing SVG" />
+</p>
 
-<div align="center">
+<p align="center">
+  <strong>🏭 Online Warehouse & Inventory ERP System</strong><br/>
+  <em>Distribution bizneslari uchun to'liq ombor boshqaruv tizimi</em>
+</p>
 
-![Next.js](https://img.shields.io/badge/Next.js-14-black?logo=next.js)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?logo=typescript)
-![Prisma](https://img.shields.io/badge/Prisma-7.7-2D3748?logo=prisma)
-![TailwindCSS](https://img.shields.io/badge/Tailwind-3-38B2AC?logo=tailwind-css)
-![Redux](https://img.shields.io/badge/Redux-Toolkit-764ABC?logo=redux)
-![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-336791?logo=postgresql)
-![License](https://img.shields.io/badge/License-MIT-green)
-
-> **Online Warehouse & Inventory ERP System for Distribution Businesses**
-
-[Features](#-features) • [Tech Stack](#-tech-stack) • [Getting Started](#-getting-started) • [Project Structure](#-project-structure) • [API Reference](#-api-reference) • [Screenshots](#-screenshots)
-
-</div>
+<p align="center">
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-14.1-black?logo=next.js&logoColor=white" alt="Next.js" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.3-blue?logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-7.7-2D3748?logo=prisma&logoColor=white" alt="Prisma" /></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css&logoColor=white" alt="Tailwind" /></a>
+  <a href="https://redux-toolkit.js.org/"><img src="https://img.shields.io/badge/Redux-Toolkit-764ABC?logo=redux&logoColor=white" alt="Redux" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white" alt="PostgreSQL" /></a>
+  <br/>
+  <a href="#-features"><strong>Features</strong></a> ·
+  <a href="#-tech-stack"><strong>Tech Stack</strong></a> ·
+  <a href="#-quick-start"><strong>Quick Start</strong></a> ·
+  <a href="#-architecture"><strong>Architecture</strong></a> ·
+  <a href="#-api-reference"><strong>API</strong></a> ·
+  <a href="#-roadmap"><strong>Roadmap</strong></a>
+</p>
 
 ---
 
-## 📖 About
+## 🎯 Overview
 
-**WareFlow** is a full-featured **Warehouse Management ERP system** designed for distribution businesses that manage products across multiple warehouse locations. The system handles product catalogs, multi-warehouse stock tracking, inter-warehouse transfers, inventory audits, price management, and customer/supplier financial tracking with dual-currency support (USD & UZS).
+**WareFlow** — bu distribyutor kompaniyalar uchun mo'ljallangan **to'liq funksional ombor boshqaruv ERP tizimi**. Mahsulot kataloglari, ko'p omborli zaxira boshqaruvi, omborlararo transferlar, inventarizatsiya auditi, narxlar boshqaruvi va mijoz/ta'minotchi moliyaviy hisoblarini bitta platformada yuritish imkonini beradi.
 
-Originally built for a wallpaper distribution company operating across Uzbekistan (Denov, Termez, Tashkent, Samarkand, Fergana), the system is flexible enough to handle any product distribution business.
+| | |
+|---|---|
+| 🌐 **Til** | O'zbek / Русский / English (multi-language) |
+| 💱 **Valyuta** | USD + UZS (ikki valyutali balans) |
+| 🏢 **Omborlar** | Cheksiz miqdorda ombor qo'llab-quvvatlanadi |
+| 🔐 **Auth** | NextAuth v4 + JWT + Role-based access (ADMIN / MANAGER / STAFF) |
+| 📊 **Modellar** | 18 ta Prisma modeli, 5 ta domain |
 
 ---
 
 ## ✨ Features
 
-### 📦 Product Management
-- Full product catalog with categories and collections
-- SKU & barcode generation (EAN13, Code128, UPC)
-- Multi-tier pricing (retail, wholesale, minimum)
-- Product image support
-- Stock levels per warehouse
+<details open>
+<summary><strong>📦 Mahsulotlar boshqaruvi</strong></summary>
 
-### 🏢 Multi-Warehouse Support
-- Unlimited warehouse locations with address tracking
-- Per-warehouse stock entries with quantity & cost price
-- Stock reservation system
+- ✅ To'liq mahsulot katalogi (kategoriya + kollektsiya + o'lchov birligi)
+- ✅ SKU & shtrix-kod generatsiya (EAN13, Code128, UPC)
+- ✅ Ko'p darajali narxlar (chakana ← ulgurji ← minimal)
+- ✅ Mahsulot rasmlari qo'llab-quvvatlanadi
+- ✅ Har bir ombor bo'yicha zaxira darajasi
+</details>
 
-### 🚚 Inter-Warehouse Transfers
-- Create and track transfers between warehouses
-- Transfer status lifecycle: `PENDING → IN_TRANSIT → COMPLETED / CANCELLED`
-- Document number generation
-- Responsible person assignment
+<details>
+<summary><strong>🏢 Ko'p ombor tizimi</strong></summary>
 
-### 📋 Inventory Audits
-- Stock audit creation and tracking
-- System quantity vs actual quantity comparison
-- Auto-calculated discrepancies
-- Audit status: `IN_PROGRESS → COMPLETED`
+- ✅ Cheksiz miqdordagi omborlar (manzil tracking bilan)
+- ✅ Har bir ombor uchun alohida zaxira yozuvlari (miqdor + tannarx)
+- ✅ Zaxira band qilish (reservation) tizimi
+</details>
 
-### 💰 Price Lists
-- Sale & Purchase price lists
-- Multiple active price lists support
-- Per-item price management
+<details>
+<summary><strong>🚚 Omborlararo transferlar</strong></summary>
 
-### 👥 Customer Management
-- Individual & corporate customer profiles
-- **Dual-currency balances** (USD + UZS)
-- Customer groups with default discounts
-- Regional segmentation
-- Active/Inactive status tracking
+- ✅ Omborlar orasida transfer yaratish va kuzatish
+- ✅ Status lifecycle: `PENDING` → `IN_TRANSIT` → `COMPLETED` / `CANCELLED`
+- ✅ Hujjat raqami generatsiya (auto-increment)
+- ✅ Mas'ul shaxs tayinlash
+</details>
 
-### 🏭 Supplier Management
-- Supplier profiles with contact information
-- Dual-currency debt tracking (USD + UZS)
-- Transaction history
-- Category-based organization
+<details>
+<summary><strong>📋 Inventarizatsiya auditi</strong></summary>
 
-### 📊 Dashboard
-- Key KPI cards: transfers, warehouses, customer debt, supplier debt
-- Financial summary with dual-currency display
-- Product & warehouse statistics
+- ✅ Zaxira auditini yaratish va boshqarish
+- ✅ Tizim miqdori vs faktik miqdor taqqoslash
+- ✅ Avtomatik farq hisoblash
+- ✅ Audit status: `IN_PROGRESS` → `COMPLETED`
+</details>
+
+<details>
+<summary><strong>💰 Narxlar ro'yxati</strong></summary>
+
+- ✅ Sotuv (SALE) va Xarid (PURCHASE) narxlar ro'yxati
+- ✅ Bir nechta aktiv narxlar ro'yxatini qo'llab-quvvatlaydi
+- ✅ Har bir mahsulot uchun individual narx belgilash
+</details>
+
+<details>
+<summary><strong>👥 Mijozlar boshqaruvi</strong></summary>
+
+- ✅ Individual va korporativ mijoz profillari
+- ✅ **Ikki valyutali balans** (USD + UZS)
+- ✅ Mijozlar guruhlari (standart chegirma bilan)
+- ✅ Hudud bo'yicha segmentatsiya
+- ✅ Aktiv / Nofaol status tracking
+- ✅ Qarzдор mijozlar ro'yxati
+</details>
+
+<details>
+<summary><strong>🏭 Ta'minotchilar boshqaruvi</strong></summary>
+
+- ✅ Ta'minotchi profillari (aloqa shaxsi, telefon, kategoriya)
+- ✅ Ikki valyutali qarz/kredit hisobi (USD + UZS)
+- ✅ Tranzaksiyalar tarixi
+- ✅ Kreditdor ta'minotchilar ro'yxati
+</details>
+
+<details>
+<summary><strong>📊 Dashboard & Analytics</strong></summary>
+
+- ✅ Asosiy KPI kartochkalar (transferlar, omborlar, mijoz qarzi, ta'minotchi qarzi)
+- ✅ Ikki valyutali moliyaviy xulosa
+- ✅ Mahsulot va ombor statistikasi
+</details>
+
+<details>
+<summary><strong>🔐 Autentifikatsiya</strong></summary>
+
+- ✅ NextAuth v4 + Credentials Provider
+- ✅ JWT session boshqaruvi
+- ✅ Rolga asoslangan kirish (ADMIN / MANAGER / STAFF)
+- ✅ Middleware orqali himoyalangan route'lar
+- ✅ Chiroyli login sahifa (responsive dizayn)
+</details>
 
 ---
 
 ## 🛠 Tech Stack
 
-| Layer | Technology |
-|---|---|
-| **Framework** | [Next.js 14](https://nextjs.org/) (App Router) |
-| **Language** | [TypeScript 5](https://www.typescriptlang.org/) |
-| **Styling** | [Tailwind CSS 3](https://tailwindcss.com/) + custom utilities |
-| **State Management** | [Redux Toolkit](https://redux-toolkit.js.org/) + React Redux |
-| **Database** | PostgreSQL |
-| **ORM** | [Prisma 7.7](https://www.prisma.io/) with `@prisma/adapter-pg` |
-| **Icons** | [Lucide React](https://lucide.dev/) |
-| **Runtime** | Node.js |
+```
+┌─────────────────────────────────────────────────────┐
+│                    FRONTEND                         │
+│  Next.js 14 (App Router)  •  React 18  •  TS 5     │
+│  Tailwind CSS 3           •  Lucide Icons           │
+│  Redux Toolkit            •  React Redux            │
+├─────────────────────────────────────────────────────┤
+│                   AUTH LAYER                        │
+│  NextAuth v4  •  JWT  •  bcryptjs  •  Middleware   │
+├─────────────────────────────────────────────────────┤
+│                 DATABASE LAYER                      │
+│  Prisma 7.7  •  @prisma/adapter-pg  •  PostgreSQL   │
+│  Connection Pooling  •  Global Client Singleton     │
+└─────────────────────────────────────────────────────┘
+```
+
+| Layer | Texnologiya | Versiya |
+|---|---|---|
+| **Framework** | [Next.js](https://nextjs.org/) (App Router) | `14.1` |
+| **Language** | [TypeScript](https://www.typescriptlang.org/) | `5.3` |
+| **Styling** | [Tailwind CSS](https://tailwindcss.com/) + Custom utilities | `3.4` |
+| **State** | [Redux Toolkit](https://redux-toolkit.js.org/) + React Redux | `2.2` |
+| **Auth** | [NextAuth](https://next-auth.js.org/) v4 + bcryptjs | `4.24` |
+| **Validation** | [Zod](https://zod.dev/) | `4.3` |
+| **ORM** | [Prisma](https://www.prisma.io/) + `@prisma/adapter-pg` | `7.7` |
+| **Database** | [PostgreSQL](https://www.postgresql.org/) | `16+` |
+| **Icons** | [Lucide React](https://lucide.dev/) | `0.358` |
+| **Runtime** | Node.js | `18+` |
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quick Start
 
-### Prerequisites
+### 📋 Prerequisites
 
-- **Node.js** 18+ 
-- **PostgreSQL** database (local or hosted)
-- **npm** or **yarn**
+| Dastur | Versiya | O'rnatish |
+|---|---|---|
+| [Node.js](https://nodejs.org/) | `18+` | `nvm install 22` |
+| [PostgreSQL](https://www.postgresql.org/) | `14+` | Local yoki hosted (Neon, Supabase, Railway) |
+| [npm](https://www.npmjs.com/) | `9+` | Node.js bilan birga keladi |
 
-### Installation
+### ⚡ 5 qadamda ishga tushirish
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/nazarovdev1/WareFlow.git
-   cd WareFlow
-   ```
+```bash
+# 1️⃣  Repository'ni klonlash
+git clone https://github.com/nazarovdev1/WareFlow.git
+cd WareFlow
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+# 2️⃣  Dependency'larni o'rnatish
+npm install
 
-3. **Set up environment variables**
-   
-   Create a `.env` file in the project root:
-   ```env
-   DATABASE_URL="postgresql://user:password@localhost:5432/warehouse_db?schema=public"
-   ```
+# 3️⃣  .env fayl yaratish
+cat > .env << 'EOF'
+DATABASE_URL="postgresql://user:password@localhost:5432/wareflow_db?schema=public"
+NEXTAUTH_SECRET="your-super-secret-key-here"
+NEXTAUTH_URL="http://localhost:3000"
+EOF
 
-4. **Run database migrations**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
+# 4️⃣  Database'ni sozlash
+npx prisma generate
+npx prisma db push
+npx tsx prisma/seed.ts          # ⚡ Admin user yaratadi
 
-5. **Seed the database (optional — demo data)**
-   ```bash
-   npx tsx prisma/seed.ts
-   ```
+# 5️⃣  Dev server'ni ishga tushirish
+npm run dev
+```
 
-6. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+> 🌐 **Brauzerda oching:** [http://localhost:3000](http://localhost:3000)
+>
+> 🔑 **Default Admin:** `admin@ibox.uz` / `admin`
 
 ---
 
-## 📁 Project Structure
+## 🏗 Architecture
+
+### 📁 Project Structure
 
 ```
 WareFlow/
-├── app/                      # Next.js App Router
-│   ├── api/                  # REST API route handlers
-│   │   ├── products/         # Product CRUD
-│   │   ├── warehouses/       # Warehouse CRUD
-│   │   ├── transfers/        # Transfer management
-│   │   ├── stock/            # Stock entries
-│   │   ├── price-lists/      # Price list management
-│   │   ├── inventory-audit/  # Stock audit
-│   │   ├── customers/        # Customer CRUD + transactions
-│   │   ├── customer-groups/  # Customer group management
-│   │   ├── suppliers/        # Supplier CRUD + transactions
-│   │   └── dashboard/stats/  # Dashboard statistics
-│   ├── (pages)/              # Page components
-│   │   ├── page.tsx          # Dashboard
-│   │   ├── inventory/        # Product list & add form
-│   │   ├── barcode/          # Barcode printing
-│   │   ├── prices/           # Price list pages
-│   │   ├── warehouse/        # Transfer, stock, audit pages
-│   │   ├── customers/        # Customer management pages
-│   │   └── suppliers/        # Supplier management pages
-│   └── layout.tsx            # Root layout with sidebar
-├── components/               # Reusable UI components
-├── lib/                      # Utilities & Redux
-│   ├── features/             # Redux Toolkit slices
-│   └── db.ts                 # Prisma client (connection pooled)
+├── app/                              # Next.js App Router
+│   ├── (dashboard)/                  # 🎯 Protected dashboard routes
+│   │   ├── layout.tsx                #    → Dashboard layout (sidebar)
+│   │   ├── page.tsx                  #    → Main dashboard
+│   │   ├── inventory/                #    → Mahsulotlar ro'yxati
+│   │   ├── barcode/                  #    → Shtrix-kod chop etish
+│   │   ├── prices/                   #    → Narxlar ro'yxati
+│   │   │   ├── page.tsx
+│   │   │   └── add/page.tsx
+│   │   ├── warehouse/                #    → Ombor boshqaruvi
+│   │   │   ├── page.tsx              #       → Transferlar
+│   │   │   ├── stock/page.tsx        #       → Zaxira
+│   │   │   ├── inventory/page.tsx    #       → Inventarizatsiya
+│   │   │   └── add/page.tsx          #       → Ombor qo'shish
+│   │   ├── customers/                #    → Mijozlar
+│   │   │   ├── page.tsx              #       → Ro'yxat
+│   │   │   ├── add/page.tsx          #       → Qo'shish
+│   │   │   ├── groups/page.tsx       #       → Guruhlar
+│   │   │   ├── groups/[id]/page.tsx  #       → Guruh tafsilotlari
+│   │   │   └── debtors/page.tsx      #       → Qarzдорlar
+│   │   └── suppliers/                #    → Ta'minotchilar
+│   │       ├── page.tsx
+│   │       ├── add/page.tsx
+│   │       └── creditors/page.tsx    #       → Kreditdorlar
+│   │
+│   ├── api/                          # 🔌 REST API Routes
+│   │   ├── auth/[...nextauth]/       #    → NextAuth handler
+│   │   ├── products/                 #    → Mahsulotlar CRUD
+│   │   ├── warehouses/               #    → Omborlar CRUD
+│   │   ├── transfers/                #    → Transferlar
+│   │   ├── stock/                    #    → Zaxira yozuvlari
+│   │   ├── price-lists/              #    → Narxlar ro'yxati
+│   │   ├── inventory-audit/          #    → Inventarizatsiya
+│   │   ├── customers/                #    → Mijozlar
+│   │   ├── customer-groups/          #    → Mijoz guruhlari
+│   │   ├── suppliers/                #    → Ta'minotchilar
+│   │   ├── dashboard/stats/          #    → Dashboard statistika
+│   │   └── setup-admin/              #    → Admin yaratish endpoint
+│   │
+│   ├── login/                        # 🔐 Login sahifa
+│   │   └── page.tsx
+│   ├── layout.tsx                    # Root layout
+│   └── providers.tsx                 # Redux + Auth providers
+│
+├── components/                       # 🧩 UI Components
+│   ├── providers/
+│   │   └── AuthProvider.tsx          #    → NextAuth session provider
+│   └── ...                           #    → Reusable components
+│
+├── lib/                              # 📚 Utilities
+│   ├── db.ts                         #    → Prisma client (pooled singleton)
+│   ├── auth.ts                       #    → NextAuth config
+│   ├── features/                     #    → Redux Toolkit slices
+│   └── ...
+│
 ├── prisma/
-│   ├── schema.prisma         # Database schema (17 models)
-│   └── seed.ts               # Demo data seeder
-├── .env                      # Environment variables
-├── next.config.js            # Next.js configuration
-├── tailwind.config.ts        # Tailwind CSS configuration
-└── tsconfig.json             # TypeScript configuration
+│   ├── schema.prisma                 # 🗄  Database schema (18 models)
+│   └── seed.ts                       # 🌱  Admin user seeder
+│
+├── middleware.ts                     # 🛡  Auth middleware (route protection)
+├── .env                              # 🔑  Environment variables
+├── next.config.js                    # ⚙️  Next.js config
+├── tailwind.config.ts                # 🎨  Tailwind config
+├── tsconfig.json                     # 📘  TypeScript config
+└── package.json                      # 📦  Dependencies
 ```
+
+### 🗄 Database Schema
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│                     DATABASE DOMAINS                         │
+├──────────────┬───────────────────────────────────────────────┤
+│  📦 Products │  Category, Folder, Unit, Product              │
+│  🏢 Warehouse│  Warehouse, StockEntry                        │
+│  🚚 Transfer │  Transfer, TransferItem                       │
+│  📋 Audit    │  InventoryAudit, InventoryAuditItem           │
+│  💰 Pricing  │  PriceList, PriceListItem                     │
+│  👥 Customers│  CustomerGroup, Customer, CustomerTransaction  │
+│  🏭 Suppliers│  Supplier, SupplierTransaction                │
+│  🔐 Auth     │  User (ADMIN / MANAGER / STAFF)               │
+└──────────────┴───────────────────────────────────────────────┘
+```
+
+**Jami:** 18 model • 5 enum • 30+ relation • Cascade delete support
 
 ---
 
 ## 🔌 API Reference
 
-### Products
+### 🔐 Authentication
+
+| Method | Endpoint | Body | Description |
+|---|---|---|---|
+| `POST` | `/api/auth/signin` | `{ email, password }` | Login |
+| `POST` | `/api/auth/signout` | — | Logout |
+| `GET` | `/api/auth/session` | — | Get current session |
+
+### 📦 Products
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/products` | List products (search, filter, paginate) |
-| `POST` | `/api/products` | Create product with optional initial stock |
-| `DELETE` | `/api/products/[id]` | Delete a product |
+| `GET` | `/api/products` | Ro'yxat (qidiruv, filter, paginatsiya) |
+| `POST` | `/api/products` | Yangi mahsulot yaratish |
+| `DELETE` | `/api/products/[id]` | Mahsulotni o'chirish |
 
-### Warehouses
+### 🏢 Warehouses
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/warehouses` | List warehouses |
-| `POST` | `/api/warehouses` | Create warehouse |
+| `GET` | `/api/warehouses` | Omborlar ro'yxati |
+| `POST` | `/api/warehouses` | Yangi ombor yaratish |
 
-### Transfers
+### 🚚 Transfers
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/transfers` | List transfers with filtering |
-| `POST` | `/api/transfers` | Create new transfer |
-| `GET` | `/api/transfers/[id]` | Get transfer details |
-| `PATCH` | `/api/transfers/[id]` | Update transfer |
-| `DELETE` | `/api/transfers/[id]` | Delete transfer |
+| `GET` | `/api/transfers` | Transferlar ro'yxati (filter bilan) |
+| `POST` | `/api/transfers` | Yangi transfer yaratish |
+| `GET` | `/api/transfers/[id]` | Transfer tafsilotlari |
+| `PATCH` | `/api/transfers/[id]` | Transfer yangilash |
+| `DELETE` | `/api/transfers/[id]` | Transfer o'chirish |
 
-### Stock
+### 📋 Inventory Audits
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/stock` | List stock entries |
-| `POST` | `/api/stock` | Create stock entry |
+| `GET` | `/api/inventory-audit` | Auditlar ro'yxati |
+| `POST` | `/api/inventory-audit` | Yangi audit yaratish |
+| `DELETE` | `/api/inventory-audit/[id]` | Audit o'chirish |
 
-### Inventory Audits
+### 💰 Price Lists
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/inventory-audit` | List audits |
-| `POST` | `/api/inventory-audit` | Create audit |
-| `DELETE` | `/api/inventory-audit/[id]` | Delete audit |
+| `GET` | `/api/price-lists` | Narxlar ro'yxati |
+| `POST` | `/api/price-lists` | Yangi narxlar ro'yxati |
+| `DELETE` | `/api/price-lists/[id]` | O'chirish |
 
-### Price Lists
+### 👥 Customers
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/price-lists` | List price lists |
-| `POST` | `/api/price-lists` | Create price list |
-| `DELETE` | `/api/price-lists/[id]` | Delete price list |
+| `GET` | `/api/customers` | Mijozlar ro'yxati (statistika bilan) |
+| `POST` | `/api/customers` | Yangi mijoz yaratish |
+| `DELETE` | `/api/customers/[id]` | Mijoz o'chirish |
 
-### Customers
+### 🏭 Suppliers
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/customers` | List customers with stats |
-| `POST` | `/api/customers` | Create customer |
-| `DELETE` | `/api/customers/[id]` | Delete customer |
+| `GET` | `/api/suppliers` | Ta'minotchilar ro'yxati |
+| `POST` | `/api/suppliers` | Yangi ta'minotchi yaratish |
+| `DELETE` | `/api/suppliers/[id]` | Ta'minotchi o'chirish |
 
-### Customer Groups
+### 📊 Dashboard
+
 | Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/customer-groups` | List groups |
-| `POST` | `/api/customer-groups` | Create group |
-
-### Customer Transactions
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/customer-transactions` | List transactions |
-| `POST` | `/api/customer-transactions` | Create transaction |
-
-### Suppliers
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/suppliers` | List suppliers |
-| `POST` | `/api/suppliers` | Create supplier |
-| `DELETE` | `/api/suppliers/[id]` | Delete supplier |
-
-### Supplier Transactions
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/supplier-transactions` | List transactions |
-| `POST` | `/api/supplier-transactions` | Create transaction |
-
-### Dashboard
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/dashboard/stats` | Aggregated statistics |
-
----
-
-## 📸 Screenshots
-
-### Dashboard
-Main dashboard with key performance indicators and financial summary.
-
-### Product Inventory
-Product catalog with search, filtering, stock levels, and status indicators.
-
-### Warehouse Transfers
-Inter-warehouse transfer management with status tracking.
-
-### Customer Management
-Customer profiles with dual-currency balance tracking and regional breakdown.
-
----
-
-## 🗄 Database Schema
-
-The system uses **17 Prisma models** organized into 5 domains:
-
-| Domain | Models |
-|---|---|
-| **Products** | `Category`, `Folder`, `Unit`, `Product` |
-| **Warehouse** | `Warehouse`, `StockEntry` |
-| **Transfers** | `Transfer`, `TransferItem` |
-| **Inventory Audit** | `InventoryAudit`, `InventoryAuditItem` |
-| **Pricing** | `PriceList`, `PriceListItem` |
-| **Customers** | `CustomerGroup`, `Customer`, `CustomerTransaction` |
-| **Suppliers** | `Supplier`, `SupplierTransaction` |
+| `GET` | `/api/dashboard/stats` | Aggregatsiyalangan statistika |
 
 ---
 
@@ -299,61 +373,95 @@ The system uses **17 Prisma models** organized into 5 domains:
 
 ### Environment Variables
 
-| Variable | Description | Required |
-|---|---|---|
-| `DATABASE_URL` | PostgreSQL connection string | ✅ Yes |
+| Variable | Tavsif | Majburiy | Misol |
+|---|---|---|---|
+| `DATABASE_URL` | PostgreSQL ulanish string | ✅ | `postgresql://user:pass@host:5432/db` |
+| `NEXTAUTH_SECRET` | JWT sign uchun secret kalit | ✅ | `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | App base URL | ✅ (prod) | `http://localhost:3000` |
 
 ### Available Scripts
 
-| Command | Description |
+| Buyruq | Tavsif |
 |---|---|
-| `npm run dev` | Start development server |
-| `npm run build` | Build for production |
-| `npm run start` | Start production server |
-| `npx prisma generate` | Generate Prisma client |
-| `npx prisma db push` | Push schema to database |
-| `npx tsx prisma/seed.ts` | Seed demo data |
+| `npm run dev` | Development server (`http://localhost:3000`) |
+| `npm run build` | Production build |
+| `npm run start` | Production server |
+| `npm run lint` | ESLint tekshiruvi |
+| `npx prisma generate` | Prisma client generatsiya |
+| `npx prisma db push` | Schema'ni database'ga push qilish |
+| `npx prisma studio` | Prisma Studio GUI (database browser) |
+| `npx tsx prisma/seed.ts` | Demo data seed |
 
 ---
 
-## 🚧 Roadmap
+## 🗺 Roadmap
 
-- [ ] Authentication & Authorization (JWT, RBAC)
-- [ ] Sales module (SOTUVLAR)
-- [ ] Purchases module (XARIDLAR)
-- [ ] Financial reporting & analytics
-- [ ] Barcode scanner integration
-- [ ] Export to Excel/PDF
-- [ ] Real-time stock alerts
-- [ ] Multi-language support (EN/UZ/RU)
-- [ ] Mobile-responsive improvements
+### ✅ Amalga oshirilgan
+- [x] Mahsulotlar boshqaruvi (CRUD + shtrix-kod)
+- [x] Ko'p ombor tizimi
+- [x] Omborlararo transferlar
+- [x] Inventarizatsiya auditi
+- [x] Narxlar ro'yxati
+- [x] Mijozlar boshqaruvi (ikki valyuta)
+- [x] Ta'minotchilar boshqaruvi
+- [x] Dashboard statistika
+- [x] Autentifikatsiya (NextAuth + JWT + RBAC)
+- [x] Login sahifa + Middleware protection
+
+### 🚧 Rejalashtirilgan
+- [ ] Sotuvlar moduli (SOTUVLAR) — order, invoice, receipt
+- [ ] Xaridlar moduli (XARIDLAR) — purchase orders
+- [ ] Moliyaviy hisobotlar & analitika
+- [ ] Shtrix-kod skanner integratsiya
+- [ ] Excel/PDF eksport
+- [ ] Real-time zaxira ogohlantirishlar
+- [ ] Ko'p til qo'llab-quvvatlash (UZ / RU / EN)
+- [ ] Mobil responsive yaxshilash
+- [ ] Docker containerizatsiya
+- [ ] CI/CD pipeline
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions xush keladi! Iltimos, Pull Request yuboring:
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+```bash
+# 1. Fork qiling
+# 2. Feature branch yarating
+git checkout -b feature/yangi-funksiya
+
+# 3. Commit qiling
+git commit -m "feat: yangi funksiya qo'shildi"
+
+# 4. Push qiling
+git push origin feature/yangi-funksiya
+
+# 5. Pull Request oching
+```
 
 ---
 
 ## 📄 License
 
-This project is licensed under the MIT License.
+MIT License — erkin foydalanish, o'zgartirish va tarqatish mumkin.
 
 ---
 
 ## 👨‍💻 Author
 
-**nazarovdev1** — [GitHub](https://github.com/nazarovdev1)
+<div align="center">
+
+| | |
+|---|---|
+| **nazarovdev1** | [GitHub Profile](https://github.com/nazarovdev1) |
+| | [WareFlow Repository](https://github.com/nazarovdev1/WareFlow) |
+
+</div>
 
 ---
 
-<div align="center">
-  Made with ❤️ for efficient warehouse management
-</div>
+<p align="center">
+  <em>🏭 WareFlow — Ombor boshqaruvi samarali, tez va ishonchli.</em><br/>
+  <sub>Made with ❤️ and ☕ in Uzbekistan</sub>
+</p>
