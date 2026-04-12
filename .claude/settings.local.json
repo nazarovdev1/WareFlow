@@ -1,8 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "Bash(spotify:*)",
-      "Bash(command -v spotify)"
-    ]
-  }
-}
