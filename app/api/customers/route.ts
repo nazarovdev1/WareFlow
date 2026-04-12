@@ -1,5 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { z } from 'zod';
+
+const CustomerSchema = z.object({
+  fullName: z.string().min(1, "Mijoz ismi majburiy"),
+  companyName: z.string().optional().nullable(),
+  phone: z.string().optional().nullable(),
+  region: z.string().optional().nullable(),
+  status: z.enum(['ACTIVE', 'INACTIVE']).default('ACTIVE'),
+  groupId: z.string().optional().nullable(),
+  balanceUSD: z.coerce.number().default(0),
+  balanceUZS: z.coerce.number().default(0),
+});
+
 
 // GET /api/customers — List customers with filters
 export async function GET(req: NextRequest) {
@@ -13,17 +26,36 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '25');
     const skip = (page - 1) * limit;
 
+    const isDebtor = searchParams.get('isDebtor') === 'true';
+
     const where: any = {};
+    const andConditions: any[] = [];
+
     if (search) {
-      where.OR = [
-        { fullName: { contains: search, mode: 'insensitive' } },
-        { companyName: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search, mode: 'insensitive' } },
-      ];
+      andConditions.push({
+        OR: [
+          { fullName: { contains: search, mode: 'insensitive' } },
+          { companyName: { contains: search, mode: 'insensitive' } },
+          { phone: { contains: search, mode: 'insensitive' } },
+        ]
+      });
     }
-    if (region) where.region = region;
-    if (groupId) where.groupId = groupId;
-    if (status) where.status = status;
+    if (region) andConditions.push({ region });
+    if (groupId) andConditions.push({ groupId });
+    if (status) andConditions.push({ status });
+
+    if (isDebtor) {
+      andConditions.push({
+        OR: [
+          { balanceUSD: { lt: 0 } },
+          { balanceUZS: { lt: 0 } }
+        ]
+      });
+    }
+
+    if (andConditions.length > 0) {
+      where.AND = andConditions;
+    }
 
     const [customers, total] = await Promise.all([
       prisma.customer.findMany({
@@ -38,6 +70,7 @@ export async function GET(req: NextRequest) {
 
     // Aggregated stats
     const stats = await prisma.customer.aggregate({
+      where,
       _sum: { balanceUSD: true, balanceUZS: true },
       _count: true,
     });
@@ -61,24 +94,43 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    if (!body.fullName) {
-      return NextResponse.json({ error: 'Mijoz ismi majburiy' }, { status: 400 });
+    
+    // Validate with Zod
+    const result = CustomerSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ 
+        error: 'Validatsiya xatosi', 
+        details: result.error.errors.map(e => e.message) 
+      }, { status: 400 });
     }
+
+    const {
+      fullName,
+      companyName,
+      phone,
+      region,
+      status,
+      groupId,
+      balanceUSD,
+      balanceUZS,
+    } = result.data;
+
     const customer = await prisma.customer.create({
       data: {
-        fullName: body.fullName,
-        companyName: body.companyName || null,
-        phone: body.phone || null,
-        region: body.region || null,
-        status: body.status || 'ACTIVE',
-        groupId: body.groupId || null,
-        balanceUSD: body.balanceUSD ? parseFloat(body.balanceUSD) : 0,
-        balanceUZS: body.balanceUZS ? parseFloat(body.balanceUZS) : 0,
+        fullName,
+        companyName: companyName || null,
+        phone: phone || null,
+        region: region || null,
+        status,
+        groupId: groupId || null,
+        balanceUSD,
+        balanceUZS,
       },
       include: { group: true },
     });
     return NextResponse.json(customer, { status: 201 });
   } catch (error) {
+    console.error('POST /api/customers error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

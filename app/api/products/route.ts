@@ -1,5 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { z } from 'zod';
+
+const ProductSchema = z.object({
+  name: z.string().min(1, "Mahsulot nomi majburiy"),
+  sku: z.string().optional().nullable(),
+  barcode: z.string().optional().nullable(),
+  barcodeType: z.string().default('EAN13'),
+  imageUrl: z.string().url().optional().nullable().or(z.literal("")),
+  sellPrice: z.coerce.number().min(0).default(0),
+  wholesalePrice: z.coerce.number().min(0).default(0),
+  minPrice: z.coerce.number().min(0).default(0),
+  categoryId: z.string().optional().nullable(),
+  folderId: z.string().optional().nullable(),
+  unitId: z.string().optional().nullable(),
+  initialStock: z.object({
+    warehouseId: z.string(),
+    quantity: z.coerce.number().min(0),
+    costPrice: z.coerce.number().min(0).optional(),
+  }).optional(),
+});
+
 
 // GET /api/products — List products with search, category filter, pagination
 export async function GET(req: NextRequest) {
@@ -60,6 +81,16 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
+    
+    // Validate with Zod
+    const result = ProductSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ 
+        error: 'Validatsiya xatosi', 
+        details: result.error.errors.map(e => e.message) 
+      }, { status: 400 });
+    }
+
     const {
       name,
       sku,
@@ -72,38 +103,33 @@ export async function POST(req: NextRequest) {
       categoryId,
       folderId,
       unitId,
-      // Optional initial stock
       initialStock,
-    } = body;
-
-    if (!name) {
-      return NextResponse.json({ error: 'Mahsulot nomi majburiy' }, { status: 400 });
-    }
+    } = result.data;
 
     const product = await prisma.product.create({
       data: {
         name,
         sku: sku || null,
         barcode: barcode || null,
-        barcodeType: barcodeType || 'EAN13',
+        barcodeType,
         imageUrl: imageUrl || null,
-        sellPrice: sellPrice ? parseFloat(sellPrice) : 0,
-        wholesalePrice: wholesalePrice ? parseFloat(wholesalePrice) : 0,
-        minPrice: minPrice ? parseFloat(minPrice) : 0,
-        categoryId: categoryId || null,
-        folderId: folderId || null,
-        unitId: unitId || null,
+        sellPrice,
+        wholesalePrice,
+        minPrice,
+        categoryId,
+        folderId,
+        unitId,
       },
     });
 
     // Create initial stock entry if provided
-    if (initialStock && initialStock.warehouseId && initialStock.quantity) {
+    if (initialStock) {
       await prisma.stockEntry.create({
         data: {
           productId: product.id,
           warehouseId: initialStock.warehouseId,
-          quantity: parseFloat(initialStock.quantity),
-          costPrice: initialStock.costPrice ? parseFloat(initialStock.costPrice) : 0,
+          quantity: initialStock.quantity,
+          costPrice: initialStock.costPrice || 0,
         },
       });
     }

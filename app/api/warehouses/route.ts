@@ -1,5 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { z } from 'zod';
+
+const WarehouseSchema = z.object({
+  name: z.string().min(1, "Ombor nomi majburiy"),
+  address: z.string().optional().nullable(),
+  isDefault: z.boolean().default(false),
+});
+
 
 // GET /api/warehouses
 export async function GET() {
@@ -20,14 +28,23 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    if (!body.name) {
-      return NextResponse.json({ error: 'Ombor nomi majburiy' }, { status: 400 });
+
+    // Validate with Zod
+    const result = WarehouseSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ 
+        error: 'Validatsiya xatosi', 
+        details: result.error.errors.map(e => e.message) 
+      }, { status: 400 });
     }
+
+    const { name, address, isDefault } = result.data;
+
     const warehouse = await prisma.warehouse.create({
       data: {
-        name: body.name,
-        address: body.address || null,
-        isDefault: body.isDefault || false,
+        name,
+        address,
+        isDefault,
       },
     });
     return NextResponse.json(warehouse, { status: 201 });

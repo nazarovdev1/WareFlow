@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { z } from 'zod';
+
+const CustomerTransactionSchema = z.object({
+  customerId: z.string().min(1, "Mijoz tanlanishi shart"),
+  type: z.enum(['DEBT', 'PAYMENT']),
+  amount: z.coerce.number().min(0.01, "Summa 0 dan katta bo'lishi shart"),
+  currency: z.enum(['USD', 'UZS']).default('USD'),
+  dueDate: z.string().or(z.date()).optional().nullable(),
+  description: z.string().optional().nullable(),
+});
+
 
 // GET /api/customer-transactions — Debtors list with filters
 export async function GET(req: NextRequest) {
@@ -39,11 +50,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { customerId, type, amount, currency, dueDate, description } = body;
 
-    if (!customerId || !type || !amount) {
-      return NextResponse.json({ error: 'customerId, type va amount majburiy' }, { status: 400 });
+    // Validate with Zod
+    const result = CustomerTransactionSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ 
+        error: 'Validatsiya xatosi', 
+        details: result.error.errors.map(e => e.message) 
+      }, { status: 400 });
     }
+
+    const { customerId, type, amount, currency, dueDate, description } = result.data;
 
     const transaction = await prisma.$transaction(async (tx) => {
       const newTx = await tx.customerTransaction.create({

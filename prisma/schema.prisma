@@ -316,3 +316,19 @@ model SupplierTransaction {
   @@index([supplierId])
   @@index([date])
 }
+
+enum UserRole {
+  ADMIN
+  MANAGER
+  STAFF
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String?
+  email     String   @unique
+  password  String
+  role      UserRole @default(STAFF)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}

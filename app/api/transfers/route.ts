@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { z } from 'zod';
+
+const TransferSchema = z.object({
+  docNumber: z.string().optional(),
+  date: z.string().or(z.date()).optional(),
+  fromWarehouseId: z.string().min(1, "Jo'natuvchi ombor majburiy"),
+  toWarehouseId: z.string().min(1, "Qabul qiluvchi ombor majburiy"),
+  responsiblePerson: z.string().optional().nullable(),
+  items: z.array(z.object({
+    productId: z.string(),
+    quantity: z.coerce.number().min(0.001, "Miqdor 0 dan katta bo'lishi kerak"),
+  })).min(1, "Kamida bitta mahsulot bo'lishi shart"),
+});
+
 
 // GET /api/transfers — List warehouse transfers with filters
 export async function GET(req: NextRequest) {
@@ -55,11 +69,18 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { docNumber, date, fromWarehouseId, toWarehouseId, responsiblePerson, items } = body;
 
-    if (!fromWarehouseId || !toWarehouseId) {
-      return NextResponse.json({ error: 'Omborlar tanlanishi shart' }, { status: 400 });
+    // Validate with Zod
+    const result = TransferSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ 
+        error: 'Validatsiya xatosi', 
+        details: result.error.errors.map(e => e.message) 
+      }, { status: 400 });
     }
+
+    const { docNumber, date, fromWarehouseId, toWarehouseId, responsiblePerson, items } = result.data;
+
     if (fromWarehouseId === toWarehouseId) {
       return NextResponse.json({ error: 'Jo\'natuvchi va qabul qiluvchi ombor bir xil bo\'lmasligi kerak' }, { status: 400 });
     }

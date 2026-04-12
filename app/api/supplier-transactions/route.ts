@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { z } from 'zod';
+
+const SupplierTransactionSchema = z.object({
+  supplierId: z.string().min(1, "Ta'minotchi tanlanishi shart"),
+  type: z.enum(['DEBT', 'PAYMENT']),
+  amount: z.coerce.number().min(0.01, "Summa 0 dan katta bo'lishi shart"),
+  currency: z.enum(['USD', 'UZS']).default('USD'),
+  dueDate: z.string().or(z.date()).optional().nullable(),
+  description: z.string().optional().nullable(),
+});
+
 
 // GET /api/supplier-transactions
 export async function GET(req: NextRequest) {
@@ -42,11 +53,17 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { supplierId, type, amount, currency, dueDate, description } = body;
 
-    if (!supplierId || !type || !amount) {
-      return NextResponse.json({ error: 'supplierId, type va amount majburiy' }, { status: 400 });
+    // Validate with Zod
+    const result = SupplierTransactionSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ 
+        error: 'Validatsiya xatosi', 
+        details: result.error.errors.map(e => e.message) 
+      }, { status: 400 });
     }
+
+    const { supplierId, type, amount, currency, dueDate, description } = result.data;
 
     const transaction = await prisma.$transaction(async (tx) => {
       const newTx = await tx.supplierTransaction.create({
