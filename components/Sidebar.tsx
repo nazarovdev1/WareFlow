@@ -61,6 +61,7 @@ export default function Sidebar() {
             <Link href="/warehouse" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>{t('warehouse', 'transfers')}</Link>
             <Link href="/warehouse/stock" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse/stock' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>{t('warehouse', 'stockRemaining')}</Link>
             <Link href="/warehouse/inventory" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse/inventory' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>{t('warehouse', 'inventory')}</Link>
+            <Link href="/warehouse/adjustment" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse/adjustment' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>Korrektirovka</Link>
           </div>
         </div>
 

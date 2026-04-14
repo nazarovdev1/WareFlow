@@ -81,6 +81,7 @@ model Warehouse {
   transfersFrom    Transfer[]          @relation("TransferFrom")
   transfersTo      Transfer[]          @relation("TransferTo")
   inventoryAudits  InventoryAudit[]
+  inventoryAuditItems InventoryAuditItem[]
   purchases        Purchase[]
   orders           Order[]
 }
@@ -172,17 +173,22 @@ model InventoryAudit {
 }
 
 model InventoryAuditItem {
-  id         String         @id @default(cuid())
-  systemQty  Float
-  actualQty  Float
-  difference Float
+  id          String         @id @default(cuid())
+  expectedQty Float          @default(0)
+  actualQty   Float          @default(0)
+  difference  Float          @default(0)
+  reason      String?
 
-  auditId    String
-  audit      InventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product        @relation(fields: [productId], references: [id])
+  auditId     String
+  audit       InventoryAudit @relation(fields: [auditId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product        @relation(fields: [productId], references: [id])
+  warehouseId String
+  warehouse   Warehouse      @relation(fields: [warehouseId], references: [id])
 
   @@index([auditId])
+  @@index([productId])
+  @@index([warehouseId])
 }
 
 // ─── PRICE LIST DOMAIN ──────────────────────────
