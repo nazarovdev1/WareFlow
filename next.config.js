@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Netlify compatibility
+  output: 'standalone',
+  
   async headers() {
     return [
       {
@@ -24,6 +27,14 @@ const nextConfig = {
         ],
       },
     ];
+  },
+  
+  // Optimize builds
+  swcMinify: true,
+  
+  // Image optimization for Netlify
+  images: {
+    unoptimized: false,
   },
 };
 

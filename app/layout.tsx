@@ -1,10 +1,12 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { Providers } from './providers';
+import { NotificationProvider } from '@/lib/NotificationContext';
+import ToastContainer from '@/components/ToastContainer';
 
 export const metadata: Metadata = {
-  title: 'Ombor System',
-  description: 'Online Warehouse Management System',
+  title: 'IBOX - Ombor Tizimi',
+  description: 'Professional Warehouse Management System',
 };
 
 export default function RootLayout({
@@ -13,10 +15,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="uz">
-      <body>
+    <html lang="uz" suppressHydrationWarning>
+      <body className="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-200">
         <Providers>
-          {children}
+          <NotificationProvider>
+            {children}
+            <ToastContainer />
+          </NotificationProvider>
         </Providers>
       </body>
     </html>

@@ -60,6 +60,8 @@ model Product {
   transferItems      TransferItem[]
   inventoryAuditItems InventoryAuditItem[]
   priceListItems     PriceListItem[]
+  purchaseItems      PurchaseItem[]
+  orderItems         OrderItem[]
 
   @@index([categoryId])
   @@index([name])
@@ -79,6 +81,8 @@ model Warehouse {
   transfersFrom    Transfer[]          @relation("TransferFrom")
   transfersTo      Transfer[]          @relation("TransferTo")
   inventoryAudits  InventoryAudit[]
+  purchases        Purchase[]
+  orders           Order[]
 }
 
 model StockEntry {
@@ -246,6 +250,7 @@ model Customer {
   updatedAt   DateTime       @updatedAt
 
   transactions CustomerTransaction[]
+  orders       Order[]
 
   @@index([groupId])
   @@index([fullName])
@@ -295,6 +300,7 @@ model Supplier {
   updatedAt     DateTime       @updatedAt
 
   transactions  SupplierTransaction[]
+  purchases     Purchase[]
 
   @@index([name])
 }
@@ -330,5 +336,151 @@ model User {
   password  String
   role      UserRole @default(STAFF)
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ─── NEW DOMAINS: PURCHASE, SALES, CASHBOX, EXCHANGE RATE ────────
+
+// ─── PURCHASE DOMAIN (KIRIM) ────────────────────
+
+enum PurchaseStatus {
+  DRAFT
+  COMPLETED
+  CANCELLED
+}
+
+model Purchase {
+  id                String         @id @default(cuid())
+  docNumber         String         @unique
+  date              DateTime       @default(now())
+  supplierId        String
+  supplier          Supplier       @relation(fields: [supplierId], references: [id])
+  warehouseId       String
+  warehouse         Warehouse      @relation(fields: [warehouseId], references: [id])
+  totalAmount       Float          @default(0)
+  status            PurchaseStatus @default(DRAFT)
+  notes             String?
+
+  items             PurchaseItem[]
+
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  @@index([supplierId])
+  @@index([warehouseId])
+  @@index([date])
+}
+
+model PurchaseItem {
+  id         String   @id @default(cuid())
+  purchaseId String
+  purchase   Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Float
+  price      Float    // Cost price at the time of purchase
+  total      Float
+
+  @@index([purchaseId])
+  @@index([productId])
+}
+
+// ─── SALES DOMAIN (SAVDO) ───────────────────────
+
+enum OrderStatus {
+  DRAFT
+  COMPLETED
+  CANCELLED
+  RETURNED
+}
+
+model Order {
+  id                String       @id @default(cuid())
+  docNumber         String       @unique
+  date              DateTime     @default(now())
+  customerId        String?
+  customer          Customer?    @relation(fields: [customerId], references: [id])
+  warehouseId       String
+  warehouse         Warehouse    @relation(fields: [warehouseId], references: [id])
+  totalAmount       Float        @default(0)
+  discount          Float        @default(0)
+  finalAmount       Float        @default(0)
+  status            OrderStatus  @default(COMPLETED)
+  paymentMethod     String?      // CASH, CARD, TRANSFER
+  notes             String?
+
+  items             OrderItem[]
+
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@index([customerId])
+  @@index([warehouseId])
+  @@index([date])
+}
+
+model OrderItem {
+  id         String   @id @default(cuid())
+  orderId    String
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id])
+  quantity   Float
+  price      Float    // Selling price at the time of sale
+  total      Float
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+// ─── CASHBOX DOMAIN (KASSA) ─────────────────────
+
+enum CashboxType {
+  CASH
+  CARD
+  BANK
+}
+
+model Cashbox {
+  id           String               @id @default(cuid())
+  name         String               // "Asosiy Kassa", "Humo", "Uzcard", "Tranzit"
+  type         CashboxType          @default(CASH)
+  currency     String               @default("UZS")
+  balance      Float                @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+
+  transactions CashTransaction[]
+}
+
+enum CashTransactionType {
+  INCOME
+  EXPENSE
+  TRANSFER
+}
+
+model CashTransaction {
+  id          String              @id @default(cuid())
+  cashboxId   String
+  cashbox     Cashbox             @relation(fields: [cashboxId], references: [id], onDelete: Cascade)
+  type        CashTransactionType
+  amount      Float
+  date        DateTime            @default(now())
+  referenceId String?             // Order ID or Purchase ID etc
+  description String?
+
+  createdAt   DateTime            @default(now())
+
+  @@index([cashboxId])
+  @@index([date])
+}
+
+// ─── EXCHANGE RATE ──────────────────────────────
+
+model ExchangeRate {
+  id        String   @id @default(cuid())
+  currency  String   @unique @default("USD")
+  rate      Float    // masalan: 12500
+  date      DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

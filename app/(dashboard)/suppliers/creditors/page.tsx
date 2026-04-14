@@ -1,22 +1,24 @@
 'use client';
 import { Search, Calendar, User, Activity, Plus, TrendingDown, DollarSign, Wallet, X, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 export default function CreditorsPage() {
+  const { t } = useLanguage();
   const [isOverdue, setIsOverdue] = useState(false);
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
-  
+
   // Real stats
   const [totalUSD, setTotalUSD] = useState(0);
   const [totalUZS, setTotalUZS] = useState(0);
-  
+
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [suppliers, setSuppliers] = useState<any[]>([]);
-  
+
   const [newTransaction, setNewTransaction] = useState({
     supplierId: '',
     type: 'DEBT',
@@ -37,7 +39,7 @@ export default function CreditorsPage() {
         setTransactions(data.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch transactions:', error);
+      console.error(t('messages', 'error'), error);
     } finally {
       setLoading(false);
     }
@@ -51,13 +53,10 @@ export default function CreditorsPage() {
         setSuppliers(data.data || []);
       }
     } catch (error) {
-      console.error('Failed to fetch suppliers:', error);
+      console.error(t('messages', 'error'), error);
     }
   };
 
-  // We recalculate actual supplier debt to display total debt based on supplier balances.
-  // Actually, since the page shows total DEBT, we can fetch from suppliers directly or sum up negative balances.
-  // We'll fetch suppliers to aggregate true overdue debt.
   const fetchStatsAndSuppliers = async () => {
     await fetchSuppliers();
     try {
@@ -65,7 +64,6 @@ export default function CreditorsPage() {
       if (res.ok) {
         const data = await res.json();
         const allSuppliers = data.data || [];
-        // Debt means balance < 0. So we sum the absolute value of negative balances.
         const usdDebt = allSuppliers.reduce((acc: number, s: any) => acc + (s.balanceUSD < 0 ? Math.abs(s.balanceUSD) : 0), 0);
         const uzsDebt = allSuppliers.reduce((acc: number, s: any) => acc + (s.balanceUZS < 0 ? Math.abs(s.balanceUZS) : 0), 0);
         setTotalUSD(usdDebt);
@@ -100,62 +98,62 @@ export default function CreditorsPage() {
         fetchStatsAndSuppliers();
       } else {
         const err = await res.json();
-        alert(err.error || 'Xatolik yuz berdi');
+        alert(err.error || t('messages', 'error'));
       }
     } catch (error) {
-      console.error('Failed to add transaction', error);
+      console.error(t('messages', 'error'), error);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const filteredTransactions = transactions.filter(t => 
+  const filteredTransactions = transactions.filter(t =>
     t.supplier?.name?.toLowerCase().includes(search.toLowerCase()) ||
     t.description?.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="p-8 font-sans w-full min-h-full flex flex-col bg-[#fefefe] relative">
+    <div className="p-8 font-sans w-full min-h-full flex flex-col bg-[#fefefe] dark:bg-slate-900 relative text-slate-800 dark:text-slate-200">
       {/* Top Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-[28px] font-black text-[#111827] tracking-tight mb-2">Kreditorlar</h1>
-          <p className="text-slate-500 font-medium text-sm">Ta'minotchilar oldidagi barcha qarzdorliklar</p>
+          <h1 className="text-[28px] font-black text-[#111827] dark:text-slate-100 tracking-tight mb-2">{t('suppliers', 'creditors')}</h1>
+          <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">{t('suppliers', 'title')} oldidagi barcha {t('customers', 'debtors')}</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center px-5 py-3 bg-[#0f172a] hover:bg-[#1e293b] text-white text-sm font-bold rounded-lg shadow-lg shadow-slate-900/10 transition"
+          className="flex items-center px-5 py-3 bg-[#0f172a] dark:bg-slate-700 hover:bg-[#1e293b] dark:hover:bg-slate-600 text-white text-sm font-bold rounded-lg shadow-lg shadow-slate-900/10 transition"
         >
-          <Plus size={16} className="mr-2" /> Yangi to'lov/Qarz
+          <Plus size={16} className="mr-2" /> {'Yangi'} {"to'lov/qarz"}
         </button>
       </div>
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center">
-          <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mr-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center">
+          <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 rounded-xl flex items-center justify-center mr-4">
             <TrendingDown size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">JAMI QARZDORLIK (USD)</p>
-            <h3 className="text-2xl font-black text-slate-900">$ {totalUSD.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</h3>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{t('common', 'total')} {t('customers', 'debtors')} (USD)</p>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100">$ {totalUSD.toLocaleString('ru-RU', { minimumFractionDigits: 2 })}</h3>
           </div>
         </div>
-        <div className="bg-white p-6 rounded-2xl border border-slate-100 shadow-sm flex items-center">
-          <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mr-4">
+        <div className="bg-white dark:bg-slate-800 p-6 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm flex items-center">
+          <div className="w-12 h-12 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl flex items-center justify-center mr-4">
             <Wallet size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">JAMI QARZDORLIK (UZS)</p>
-            <h3 className="text-2xl font-black text-slate-900">{totalUZS.toLocaleString('ru-RU')} UZS</h3>
+            <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1">{t('common', 'total')} {t('customers', 'debtors')} (UZS)</p>
+            <h3 className="text-2xl font-black text-slate-900 dark:text-slate-100">{totalUZS.toLocaleString('ru-RU')} UZS</h3>
           </div>
         </div>
-        <div className="bg-indigo-600 p-6 rounded-2xl shadow-lg shadow-indigo-200 flex items-center text-white">
+        <div className="bg-indigo-600 dark:bg-indigo-800 p-6 rounded-2xl shadow-lg shadow-indigo-200 dark:shadow-none flex items-center text-white">
           <div className="w-12 h-12 bg-white/20 text-white rounded-xl flex items-center justify-center mr-4">
             <Activity size={24} />
           </div>
           <div>
-            <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-1">MUDDATI O'TGAN Tranzaksiyalar</p>
+            <p className="text-[10px] font-black text-indigo-100 uppercase tracking-widest mb-1">{"MUDDATI O'TGAN"} {'Tranzaksiyalar'}</p>
             <h3 className="text-2xl font-black">{transactions.filter(t => t.dueDate && new Date(t.dueDate) < new Date() && t.type === 'DEBT').length} ta</h3>
           </div>
         </div>
@@ -164,21 +162,21 @@ export default function CreditorsPage() {
       {/* Filters Area */}
       <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0 md:space-x-3 mb-8">
          <div className="relative flex-1 w-full max-w-sm">
-           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" />
-           <input 
-             type="text" 
-             placeholder="Ta'minotchi yoki tavsif..." 
+           <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+           <input
+             type="text"
+             placeholder={t('common', 'search')}
              value={search}
              onChange={(e) => setSearch(e.target.value)}
-             className="w-full pl-11 pr-4 py-3 bg-[#f8fafc] border border-transparent hover:border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none transition-colors focus:bg-white focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100" 
+             className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-700 border border-transparent dark:border-slate-600 hover:border-slate-200 dark:hover:border-slate-600 rounded-xl text-sm font-medium text-slate-700 dark:text-slate-200 outline-none transition-colors focus:bg-white dark:focus:bg-slate-600 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 dark:focus:ring-indigo-900"
            />
          </div>
 
-         <div className="flex items-center space-x-4 bg-[#f8fafc] px-6 py-3 rounded-xl border border-transparent hover:border-slate-200 transition-colors">
-           <span className="text-[10px] font-black tracking-widest text-[#0f172a] uppercase leading-tight cursor-pointer" onClick={() => setIsOverdue(!isOverdue)}>MUDDATI<br/>O'TGAN</span>
-           <button 
+         <div className="flex items-center space-x-4 bg-slate-50 dark:bg-slate-700 px-6 py-3 rounded-xl border border-transparent dark:border-slate-600 hover:border-slate-200 dark:hover:border-slate-600 transition-colors">
+           <span className="text-[10px] font-black tracking-widest text-[#0f172a] dark:text-slate-200 uppercase leading-tight cursor-pointer" onClick={() => setIsOverdue(!isOverdue)}>{"MUDDATI"}<br/>{"O'TGAN"}</span>
+           <button
              onClick={() => setIsOverdue(!isOverdue)}
-             className={`w-10 h-5 rounded-full relative transition-colors shadow-inner ${isOverdue ? 'bg-indigo-600' : 'bg-slate-300'}`}
+             className={`w-10 h-5 rounded-full relative transition-colors shadow-inner ${isOverdue ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-500'}`}
            >
              <div className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-transform shadow-sm ${isOverdue ? 'translate-x-5.5 left-0.5' : 'left-0.5'}`}></div>
            </button>
@@ -186,65 +184,65 @@ export default function CreditorsPage() {
       </div>
 
       {/* Table Content */}
-      <div className="bg-white rounded-2xl border border-slate-100 shadow-sm overflow-hidden flex-1 min-h-[400px] flex flex-col">
+      <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-100 dark:border-slate-700 shadow-sm overflow-hidden flex-1 min-h-[400px] flex flex-col">
         {loading ? (
           <div className="flex h-full items-center justify-center p-20 flex-1">
-            <div className="w-10 h-10 border-4 border-indigo-100 border-t-indigo-600 rounded-full animate-spin"></div>
+            <div className="w-10 h-10 border-4 border-indigo-100 dark:border-indigo-900 border-t-indigo-600 dark:border-t-indigo-400 rounded-full animate-spin"></div>
           </div>
         ) : filteredTransactions.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-20 flex-1">
-             <div className="w-20 h-20 bg-slate-50 text-slate-300 rounded-full flex items-center justify-center mb-4">
+             <div className="w-20 h-20 bg-slate-50 dark:bg-slate-700 text-slate-300 dark:text-slate-500 rounded-full flex items-center justify-center mb-4">
                <Activity size={32} />
              </div>
-             <h2 className="text-xl font-black text-slate-700 mb-2 tracking-tight">Ma'lumotlar mavjud emas</h2>
-             <p className="text-slate-500 font-medium text-sm text-center max-w-sm leading-relaxed">
-               Tanlangan filtrlar bo'yicha hech qanday operatsiya topilmadi.
+             <h2 className="text-xl font-black text-slate-700 dark:text-slate-200 mb-2 tracking-tight">{t('common', 'noData')}</h2>
+             <p className="text-slate-500 dark:text-slate-400 font-medium text-sm text-center max-w-sm leading-relaxed">
+               {"Tanlangan filtrlar bo'yicha hech qanday operatsiya topilmadi."}
              </p>
           </div>
         ) : (
           <div className="overflow-x-auto flex-1">
             <table className="w-full text-left">
               <thead>
-                <tr className="bg-slate-50 border-b border-slate-100 px-2">
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">SANA / HUJJAT</th>
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">TA'MINOTCHI</th>
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">TAVSIF</th>
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">TURI</th>
-                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">MUDDAT</th>
-                  <th className="px-6 py-4 text-right pr-6 text-[11px] font-black text-slate-500 uppercase tracking-widest whitespace-nowrap">SUMMA</th>
+                <tr className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700 px-2">
+                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">{t('common', 'date')} / {'HUJJAT'}</th>
+                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">{t('suppliers', 'title')}</th>
+                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">{t('common', 'description')}</th>
+                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">{'TURI'}</th>
+                  <th className="px-6 py-4 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">{'MUDDAT'}</th>
+                  <th className="px-6 py-4 text-right pr-6 text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-widest whitespace-nowrap">{t('common', 'total')}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-50 font-sans text-sm">
+              <tbody className="divide-y divide-slate-50 dark:divide-slate-700 font-sans text-sm">
                 {filteredTransactions.map(t => (
-                  <tr key={t.id} className="hover:bg-slate-50/70 transition-colors group">
+                  <tr key={t.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/70 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
-                        <span className="font-bold text-slate-900">{new Date(t.date).toLocaleDateString('ru-RU')}</span>
-                        <span className="text-[10px] font-black text-slate-400 mt-0.5 tracking-wider">#TX-{t.id.substring(t.id.length-6).toUpperCase()}</span>
+                        <span className="font-bold text-slate-900 dark:text-slate-100">{new Date(t.date).toLocaleDateString('ru-RU')}</span>
+                        <span className="text-[10px] font-black text-slate-400 dark:text-slate-500 mt-0.5 tracking-wider">#TX-{t.id.substring(t.id.length-6).toUpperCase()}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center">
-                        <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-[10px] mr-3 uppercase">
-                          {t.supplier?.name.substring(0,2) || '-'}
+                        <div className="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-black text-[10px] mr-3 uppercase">
+                          {t.supplier?.name?.substring(0,2) || '-'}
                         </div>
-                        <span className="font-bold text-slate-700">{t.supplier?.name || '-'}</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-200">{t.supplier?.name || '-'}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 text-slate-500 font-medium max-w-[200px] truncate">{t.description || '-'}</td>
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400 font-medium max-w-[200px] truncate">{t.description || '-'}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${t.type === 'DEBT' ? 'bg-rose-50 text-rose-600 border border-rose-100' : 'bg-teal-50 text-teal-600 border border-teal-100'}`}>
-                        {t.type === 'DEBT' ? 'QARZ' : 'TO\'LOV'}
+                      <span className={`px-2.5 py-1 rounded-md text-[10px] font-black uppercase tracking-wider ${t.type === 'DEBT' ? 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 border border-rose-100 dark:border-rose-800' : 'bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border border-teal-100 dark:border-teal-800'}`}>
+                        {t.type === 'DEBT' ? 'QARZ' : "TO'LOV"}
                       </span>
                     </td>
                     <td className="px-6 py-4">
                       {t.dueDate ? (
-                        <span className={`font-bold ${new Date(t.dueDate) < new Date() && t.type === 'DEBT' ? 'text-rose-500' : 'text-slate-600'}`}>
+                        <span className={`font-bold ${new Date(t.dueDate) < new Date() && t.type === 'DEBT' ? 'text-rose-500 dark:text-rose-400' : 'text-slate-600 dark:text-slate-300'}`}>
                           {new Date(t.dueDate).toLocaleDateString('ru-RU')}
                         </span>
                       ) : '-'}
                     </td>
-                    <td className={`px-6 py-4 text-right pr-6 font-black text-base whitespace-nowrap ${t.type === 'DEBT' ? 'text-rose-600' : 'text-teal-600'}`}>
+                    <td className={`px-6 py-4 text-right pr-6 font-black text-base whitespace-nowrap ${t.type === 'DEBT' ? 'text-rose-600 dark:text-rose-400' : 'text-teal-600 dark:text-teal-400'}`}>
                       {t.type === 'DEBT' ? '-' : '+'}
                       {t.currency === 'USD' ? '$ ' : ''}
                       {t.amount.toLocaleString('ru-RU', { minimumFractionDigits: t.currency === 'USD' ? 2 : 0 })}
@@ -261,72 +259,72 @@ export default function CreditorsPage() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
-            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 bg-slate-50/50 sticky top-0">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 sticky top-0">
               <div>
-                <h3 className="text-lg font-black text-slate-800 tracking-tight">Yangi operatsiya kiritish</h3>
-                <p className="text-xs font-medium text-slate-500 mt-1">Ta'minotchi bilan hisob-kitobni ro'yxatga olish</p>
+                <h3 className="text-lg font-black text-slate-800 dark:text-slate-200 tracking-tight">{'Yangi'} {'operatsiya'} {'kiritish'}</h3>
+                <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-1">{t('suppliers', 'title')} {"bilan hisob-kitobni ro'yxatga olish"}</p>
               </div>
-              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-2 bg-white rounded-lg shadow-sm border border-slate-100 transition">
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 p-2 bg-white dark:bg-slate-700 rounded-lg shadow-sm border border-slate-100 dark:border-slate-600 transition">
                 <X size={18} />
               </button>
             </div>
-            
+
             <form id="transaction-form" onSubmit={handleAddTransaction} className="p-6 overflow-y-auto space-y-6">
-              
+
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1.5 border-l-2 border-indigo-500 pl-2">Ta'minotchini tanlang <span className="text-rose-500">*</span></label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5 border-l-2 border-indigo-500 pl-2">{t('suppliers', 'title')}ni {t('common', 'select')} <span className="text-rose-500">*</span></label>
                   <select
                     required
                     value={newTransaction.supplierId}
                     onChange={(e) => setNewTransaction({...newTransaction, supplierId: e.target.value})}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-white transition-all text-sm font-medium appearance-none"
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-600 transition-all text-sm font-medium appearance-none text-slate-800 dark:text-slate-200"
                   >
-                    <option value="">-- Tanlash --</option>
+                    <option value="" className="dark:bg-slate-700">-- {t('common', 'select')} --</option>
                     {suppliers.map(s => (
-                      <option key={s.id} value={s.id}>{s.name} (Balans: {s.balanceUSD < 0 ? `Qarz ${Math.abs(s.balanceUSD)} USD` : `${s.balanceUSD} USD`})</option>
+                      <option key={s.id} value={s.id} className="dark:bg-slate-700">{s.name} ({t('customers', 'balance')}: {s.balanceUSD < 0 ? `{'Qarz'} ${Math.abs(s.balanceUSD)} USD` : `${s.balanceUSD} USD`})</option>
                     ))}
                   </select>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1.5 border-l-2 border-indigo-500 pl-2">Operatsiya turi <span className="text-rose-500">*</span></label>
-                    <div className="flex bg-slate-50 p-1 rounded-xl border border-slate-200">
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5 border-l-2 border-indigo-500 pl-2">{'Operatsiya turi'} <span className="text-rose-500">*</span></label>
+                    <div className="flex bg-slate-50 dark:bg-slate-700 p-1 rounded-xl border border-slate-200 dark:border-slate-600">
                       <button
                         type="button"
                         onClick={() => setNewTransaction({...newTransaction, type: 'DEBT'})}
-                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${newTransaction.type === 'DEBT' ? 'bg-white text-rose-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${newTransaction.type === 'DEBT' ? 'bg-white dark:bg-slate-600 text-rose-600 dark:text-rose-400 shadow-sm border border-slate-200 dark:border-slate-500' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
                       >
-                        QARZ OLISH
+                        {'QARZ OLISH'}
                       </button>
                       <button
                         type="button"
                         onClick={() => setNewTransaction({...newTransaction, type: 'PAYMENT'})}
-                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${newTransaction.type === 'PAYMENT' ? 'bg-white text-teal-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
+                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${newTransaction.type === 'PAYMENT' ? 'bg-white dark:bg-slate-600 text-teal-600 dark:text-teal-400 shadow-sm border border-slate-200 dark:border-slate-500' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'}`}
                       >
-                        TO'LOV QILISH
+                        {"TO'LOV QILISH"}
                       </button>
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1.5 border-l-2 border-indigo-500 pl-2">Valyuta <span className="text-rose-500">*</span></label>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5 border-l-2 border-indigo-500 pl-2">{'VALYUTA'} <span className="text-rose-500">*</span></label>
                     <select
                       required
                       value={newTransaction.currency}
                       onChange={(e) => setNewTransaction({...newTransaction, currency: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-white transition-all text-sm font-medium appearance-none"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-600 transition-all text-sm font-medium appearance-none text-slate-800 dark:text-slate-200"
                     >
-                      <option value="USD">AQSH dollari (USD)</option>
-                      <option value="UZS">So'm (UZS)</option>
+                      <option value="USD" className="dark:bg-slate-700">AQSH dollari (USD)</option>
+                      <option value="UZS" className="dark:bg-slate-700">{"So'm"} (UZS)</option>
                     </select>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-1.5 border-l-2 border-indigo-500 pl-2">Summa <span className="text-rose-500">*</span></label>
+                    <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5 border-l-2 border-indigo-500 pl-2">{t('common', 'total')} <span className="text-rose-500">*</span></label>
                     <input
                       type="number"
                       step="0.01"
@@ -334,54 +332,54 @@ export default function CreditorsPage() {
                       required
                       value={newTransaction.amount}
                       onChange={(e) => setNewTransaction({...newTransaction, amount: e.target.value})}
-                      className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-white transition-all text-sm font-black text-slate-900"
-                      placeholder="Masalan: 12500"
+                      className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-600 transition-all text-sm font-black text-slate-900 dark:text-slate-200"
+                      placeholder={`${t('common', 'description')} 12500`}
                     />
                   </div>
                   {newTransaction.type === 'DEBT' && (
                     <div>
-                      <label className="block text-sm font-bold text-slate-700 mb-1.5 border-l-2 border-indigo-500 pl-2">Qaytarish muddati</label>
+                      <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5 border-l-2 border-indigo-500 pl-2">{t('common', 'description')}</label>
                       <input
                         type="date"
                         value={newTransaction.dueDate}
                         onChange={(e) => setNewTransaction({...newTransaction, dueDate: e.target.value})}
-                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-white transition-all text-sm font-medium"
+                        className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-600 transition-all text-sm font-medium text-slate-800 dark:text-slate-200"
                       />
                     </div>
                   )}
                 </div>
 
                 <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-1.5 border-l-2 border-slate-300 pl-2 text-slate-500">Tavsif (ixtiyoriy)</label>
+                  <label className="block text-sm font-bold text-slate-700 dark:text-slate-300 mb-1.5 border-l-2 border-slate-300 dark:border-slate-600 pl-2 text-slate-500 dark:text-slate-400">{'Tavsif'} ({t('common', 'optional')})</label>
                   <textarea
                     value={newTransaction.description}
                     onChange={(e) => setNewTransaction({...newTransaction, description: e.target.value})}
-                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 focus:bg-white transition-all text-sm font-medium min-h-[90px] resize-none"
-                    placeholder="Bitim tafsilotlari yoki izohlar..."
+                    className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 dark:focus:border-indigo-400 focus:bg-white dark:focus:bg-slate-600 transition-all text-sm font-medium min-h-[90px] resize-none text-slate-800 dark:text-slate-200"
+                    placeholder={"Bitim tafsilotlari yoki izohlar..."}
                   />
                 </div>
               </div>
 
             </form>
-            
-            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 bg-slate-50/50 mt-auto">
+
+            <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-700/50 mt-auto">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-5 py-2.5 text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-sm transition"
+                className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 rounded-xl shadow-sm transition"
               >
-                Bekor qilish
+                {t('common', 'cancel')}
               </button>
               <button
                 type="submit"
                 form="transaction-form"
                 disabled={isSubmitting}
-                className="flex items-center px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 text-white text-sm font-bold rounded-xl transition disabled:opacity-50"
+                className="flex items-center px-6 py-2.5 bg-indigo-600 hover:bg-indigo-700 shadow-lg shadow-indigo-600/20 dark:shadow-none text-white text-sm font-bold rounded-xl transition disabled:opacity-50"
               >
                 {isSubmitting ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                 ) : <Save size={16} className="mr-2" />}
-                Tizimga saqlash
+                {t('common', 'save')}
               </button>
             </div>
           </div>

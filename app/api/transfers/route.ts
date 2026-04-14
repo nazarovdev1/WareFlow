@@ -75,7 +75,7 @@ export async function POST(req: NextRequest) {
     if (!result.success) {
       return NextResponse.json({ 
         error: 'Validatsiya xatosi', 
-        details: result.error.errors.map(e => e.message) 
+        details: result.error.issues.map(e => e.message) 
       }, { status: 400 });
     }
 

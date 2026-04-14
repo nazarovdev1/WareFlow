@@ -54,9 +54,9 @@ export async function POST(req: NextRequest) {
     // Validate with Zod
     const result = CustomerTransactionSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json({ 
-        error: 'Validatsiya xatosi', 
-        details: result.error.errors.map(e => e.message) 
+      return NextResponse.json({
+        error: 'Validatsiya xatosi',
+        details: result.error.issues.map(e => e.message)
       }, { status: 400 });
     }
 
@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
         data: {
           customerId,
           type,
-          amount: parseFloat(amount),
+          amount: amount,
           currency: currency || 'USD',
           dueDate: dueDate ? new Date(dueDate) : null,
           description: description || null,
@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
 
       // Update customer balance
       const balanceField = (currency || 'USD') === 'USD' ? 'balanceUSD' : 'balanceUZS';
-      const adjustedAmount = type === 'DEBT' ? -parseFloat(amount) : parseFloat(amount);
+      const adjustedAmount = type === 'DEBT' ? -amount : amount;
 
       await tx.customer.update({
         where: { id: customerId },

@@ -2,5 +2,21 @@ node_modules
 # Keep environment variables out of version control
 .env
 
+# Prisma
 /lib/generated/prisma
+
+# Next.js
 .next
+next
+out
+
+# Build artifacts
+tsconfig.tsbuildinfo
+*.tsbuildinfo
+
+# Netlify
+.netlify
+
+# OS
+.DS_Store
+Thumbs.db
