@@ -90,7 +90,7 @@ export default function Header() {
   };
 
   return (
-    <header className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 h-16 flex items-center justify-between px-6 font-sans shrink-0 sticky top-0 z-10 w-full">
+    <header className="bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 h-16 flex items-center justify-between px-6 font-sans shrink-0 sticky top-0 z-50 w-full">
       <div className="relative w-96 max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" size={16} />
         <input
@@ -119,10 +119,10 @@ export default function Header() {
           {showNotifications && (
             <>
               <div
-                className="fixed inset-0 z-10"
+                className="fixed inset-0 z-50"
                 onClick={() => setShowNotifications(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[60] overflow-hidden">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-700">
                   <div className="flex items-center justify-between">
                     <h3 className="font-bold text-slate-800 dark:text-slate-200">{t('settings', 'notifications')}</h3>
@@ -239,10 +239,10 @@ export default function Header() {
           {showProfileMenu && (
             <>
               <div
-                className="fixed inset-0 z-10"
+                className="fixed inset-0 z-50"
                 onClick={() => setShowProfileMenu(false)}
               />
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 z-20 overflow-hidden">
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[60] overflow-hidden">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-700">
                   <div className="text-sm font-bold text-slate-800 dark:text-white">
                     {session?.user?.name || 'Admin User'}
