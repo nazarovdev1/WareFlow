@@ -21,6 +21,7 @@ export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [filteredCustomers, setFilteredCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   // Filter states
   const [regionFilter, setRegionFilter] = useState('');
@@ -31,6 +32,10 @@ export default function CustomersPage() {
   const perPage = 15;
 
   useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = () => {
     fetch('/api/customers?limit=500')
       .then(res => res.json())
       .then(data => {
@@ -38,7 +43,24 @@ export default function CustomersPage() {
         setLoading(false);
       })
       .catch(console.error);
-  }, []);
+  };
+
+  const handleDelete = async (id: string, name: string) => {
+    if (!confirm(`"${name}"ni o'chirishni tasdiqlaysizmi?`)) return;
+    setDeletingId(id);
+    try {
+      const res = await fetch(`/api/customers/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        setCustomers(prev => prev.filter(c => c.id !== id));
+      } else {
+        alert("O'chirishda xatolik yuz berdi");
+      }
+    } catch {
+      alert("O'chirishda xatolik");
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   // Apply filters
   useEffect(() => {
@@ -260,11 +282,17 @@ export default function CustomersPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link href={`/customers/edit/${c.id}`} className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
+                        <Link href={`/customers/${c.id}?edit=true`} className="p-1.5 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition">
                           <Edit size={16} />
                         </Link>
-                        <button className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition">
-                          <Trash2 size={16} />
+                        <button
+                          onClick={() => handleDelete(c.id, c.fullName)}
+                          disabled={deletingId === c.id}
+                          className="p-1.5 text-slate-400 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50 transition"
+                        >
+                          {deletingId === c.id
+                            ? <div className="w-4 h-4 border-2 border-red-300 border-t-red-600 rounded-full animate-spin" />
+                            : <Trash2 size={16} />}
                         </button>
                       </div>
                     </td>

@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { Plus, Search, Calendar, ChevronDown, PackageOpen, Check, Eye } from 'lucide-react';
+import { Plus, Search, Calendar, ChevronDown, PackageOpen, Check, Eye, X, Package } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
@@ -8,6 +8,8 @@ export default function WarehousePage() {
   const { t } = useLanguage();
   const [transfers, setTransfers] = useState<any[]>([]);
   const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [selectedTransfer, setSelectedTransfer] = useState<any | null>(null);
+  const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -163,7 +165,23 @@ export default function WarehousePage() {
                      </span>
                    </td>
                    <td className="px-6 py-4 text-right">
-                     <button className="text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition"><Eye size={18} /></button>
+                     <button
+                        onClick={async () => {
+                          setLoadingDetail(true);
+                          try {
+                            const res = await fetch(`/api/transfers/${tr.id}`);
+                            const data = await res.json();
+                            setSelectedTransfer(data);
+                          } catch {
+                            setSelectedTransfer(tr);
+                          } finally {
+                            setLoadingDetail(false);
+                          }
+                        }}
+                        className="text-slate-400 dark:text-slate-500 hover:text-teal-600 dark:hover:text-teal-400 transition p-1.5 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg"
+                      >
+                        <Eye size={18} />
+                      </button>
                    </td>
                  </tr>
               ))}
@@ -204,6 +222,65 @@ export default function WarehousePage() {
            </div>
          </div>
       </div>
+
+      {/* Transfer Detail Modal */}
+      {selectedTransfer && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 w-full max-w-lg border border-slate-200 dark:border-slate-700 max-h-[85vh] overflow-y-auto">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{selectedTransfer.docNumber}</h2>
+                <p className="text-xs text-slate-500 mt-1">{new Date(selectedTransfer.date || selectedTransfer.createdAt).toLocaleDateString('uz-UZ')}</p>
+              </div>
+              <button onClick={() => setSelectedTransfer(null)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg">
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-5">
+              <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">Dan</div>
+                <div className="font-bold text-slate-800 dark:text-slate-200">{selectedTransfer.fromWarehouse?.name || '-'}</div>
+              </div>
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                <div className="text-xs text-slate-500 mb-1">Ga</div>
+                <div className="font-bold text-emerald-700 dark:text-emerald-400">{selectedTransfer.toWarehouse?.name || '-'}</div>
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">Mahsulotlar</h3>
+                <span className={`px-2 py-0.5 rounded text-xs font-bold ${
+                  selectedTransfer.status === 'COMPLETED'
+                    ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-700 dark:text-teal-400'
+                    : 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400'
+                }`}>{selectedTransfer.status}</span>
+              </div>
+              <div className="space-y-2">
+                {(selectedTransfer.items || []).map((item: any, i: number) => (
+                  <div key={i} className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Package size={14} className="text-slate-400" />
+                      <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{item.product?.name || item.productId}</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.quantity} dona</span>
+                  </div>
+                ))}
+                {(!selectedTransfer.items || selectedTransfer.items.length === 0) && (
+                  <div className="text-center py-4 text-slate-400 text-sm">Mahsulotlar ma&apos;lumoti yo&apos;q</div>
+                )}
+              </div>
+            </div>
+
+            {selectedTransfer.responsiblePerson && (
+              <div className="text-xs text-slate-500 border-t dark:border-slate-700 pt-3">
+                Mas&apos;ul: <span className="font-bold text-slate-700 dark:text-slate-300">{selectedTransfer.responsiblePerson}</span>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

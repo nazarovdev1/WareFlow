@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
 // GET /api/suppliers/[id]
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const supplier = await prisma.supplier.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { transactions: { orderBy: { date: 'desc' }, take: 50 } },
     });
     if (!supplier) {
@@ -18,11 +19,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PUT /api/suppliers/[id]
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const supplier = await prisma.supplier.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         name: body.name,
         contactPerson: body.contactPerson,
@@ -41,9 +43,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/suppliers/[id]
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await prisma.supplier.delete({ where: { id: params.id } });
+    const { id } = await params;
+    // DELETE related transactions first
+    await prisma.supplierTransaction.deleteMany({ where: { supplierId: id } });
+    await prisma.supplier.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error: any) {
     if (error.code === 'P2025') {

@@ -21,12 +21,9 @@ export async function GET(request: Request) {
         items: {
           include: {
             product: true,
-            warehouse: true,
           },
         },
-        user: {
-          select: { name: true, email: true },
-        },
+        warehouse: true,
       },
     });
 
@@ -48,6 +45,13 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    const body = await request.json();
+    const { items } = body;
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      return NextResponse.json({ error: 'Items are required' }, { status: 400 });
+    }
+
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
     });
@@ -56,21 +60,24 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const body = await request.json();
-    const { note, items } = body;
-
-    if (!items || !Array.isArray(items) || items.length === 0) {
-      return NextResponse.json({ error: 'Items are required' }, { status: 400 });
+    const warehouseId = user.warehouseId || items[0]?.warehouseId;
+    if (!warehouseId) {
+      return NextResponse.json({ error: 'Warehouse not specified' }, { status: 400 });
     }
 
     // Create adjustment with items and update stock
     const adjustment = await prisma.$transaction(async (tx) => {
+      // Generate doc number
+      const count = await tx.inventoryAudit.count();
+      const docNumber = `ADJ-${String(count + 1).padStart(6, '0')}`;
+
       // Create audit record
       const audit = await tx.inventoryAudit.create({
         data: {
+          docNumber,
           date: new Date(),
-          note: note || 'Korrektirovka',
-          userId: user.id,
+          responsiblePerson: user.name || user.email,
+          warehouse: { connect: { id: warehouseId } },
         },
       });
 

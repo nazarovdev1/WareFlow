@@ -12,18 +12,18 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const adminEmail = 'admin@ibox.uz';
+  const adminPhone = '998901234567';
   const adminPassword = 'admin';
 
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
   await prisma.user.upsert({
-    where: { email: adminEmail },
+    where: { phone: adminPhone },
     update: {
       password: hashedPassword,
     },
     create: {
-      email: adminEmail,
+      phone: adminPhone,
       name: 'Admin',
       password: hashedPassword,
       role: 'ADMIN',

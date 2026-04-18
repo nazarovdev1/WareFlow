@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
 // GET /api/inventory-audit/[id]
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const audit = await prisma.inventoryAudit.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         warehouse: true,
         items: { include: { product: { include: { unit: true } } } },
@@ -21,11 +22,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PUT /api/inventory-audit/[id] — finalize/complete an audit
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const audit = await prisma.inventoryAudit.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status: body.status || 'COMPLETED',
         responsiblePerson: body.responsiblePerson,

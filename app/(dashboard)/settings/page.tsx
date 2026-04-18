@@ -5,7 +5,12 @@ import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useTheme } from '@/lib/ThemeContext';
 import { useNotification } from '@/lib/NotificationContext';
 import { useSession } from 'next-auth/react';
-import { Globe, Bell, User, Shield, Database, Moon, Sun, ChevronRight, Check, Download, Upload, RefreshCw, Trash, Eye, EyeOff } from 'lucide-react';
+import {
+  Globe, Bell, User, Shield, Database, Moon, Sun,
+  Check, Download, Upload, RefreshCw, Trash, Eye,
+  EyeOff, LayoutTemplate, Phone, Mail, UserCircle,
+  Save, AlertCircle, Info
+} from 'lucide-react';
 import type { Language } from '@/lib/i18n/translations';
 
 type SettingsTab = 'language' | 'notifications' | 'profile' | 'security' | 'appearance' | 'database';
@@ -18,11 +23,12 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [activeTab, setActiveTab] = useState<SettingsTab>('language');
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
 
-  const languages: { code: Language; name: string; flag: string }[] = [
-    { code: 'uz', name: "O'zbekcha", flag: '🇺🇿' },
-    { code: 'ru', name: 'Русский', flag: '🇷🇺' },
-    { code: 'en', name: 'English', flag: '🇬🇧' },
+  const languages: { code: Language; name: string; flag: string; desc: string }[] = [
+    { code: 'uz', name: "O'zbekcha", flag: '🇺🇿', desc: "O'zbek tili" },
+    { code: 'ru', name: 'Русский', flag: '🇷🇺', desc: 'Русский язык' },
+    { code: 'en', name: 'English', flag: '🇬🇧', desc: 'English language' },
   ];
 
   const [notificationSettings, setNotificationSettings] = useState({
@@ -35,6 +41,15 @@ export default function SettingsPage() {
   const [profile, setProfile] = useState({
     name: '',
     email: '',
+    phone: '',
+    role: '',
+  });
+
+  const [profileOriginal, setProfileOriginal] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    role: '',
   });
 
   const [passwords, setPasswords] = useState({
@@ -47,6 +62,22 @@ export default function SettingsPage() {
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
+  // Password strength
+  const getPasswordStrength = (pwd: string) => {
+    if (!pwd) return { level: 0, label: '', color: '' };
+    if (pwd.length < 6) return { level: 1, label: "Juda qisqa", color: 'bg-red-500' };
+    if (pwd.length < 8) return { level: 2, label: "Zaif", color: 'bg-orange-500' };
+    const hasUpper = /[A-Z]/.test(pwd);
+    const hasNumber = /[0-9]/.test(pwd);
+    const hasSpecial = /[!@#$%^&*]/.test(pwd);
+    const strength = [hasUpper, hasNumber, hasSpecial].filter(Boolean).length;
+    if (strength === 0) return { level: 2, label: "O'rtacha", color: 'bg-yellow-500' };
+    if (strength === 1) return { level: 3, label: "Yaxshi", color: 'bg-blue-500' };
+    return { level: 4, label: "Kuchli", color: 'bg-green-500' };
+  };
+
+  const pwdStrength = getPasswordStrength(passwords.new);
+
   // Load user profile and notification settings
   useEffect(() => {
     loadProfile();
@@ -54,14 +85,24 @@ export default function SettingsPage() {
   }, []);
 
   const loadProfile = async () => {
+    setProfileLoading(true);
     try {
       const res = await fetch('/api/settings/profile');
       if (res.ok) {
         const data = await res.json();
-        setProfile({ name: data.name || '', email: data.email || '' });
+        const p = {
+          name: data.name || '',
+          email: data.email || '',
+          phone: data.phone || '',
+          role: data.role || '',
+        };
+        setProfile(p);
+        setProfileOriginal(p);
       }
     } catch (err) {
       console.error('Failed to load profile:', err);
+    } finally {
+      setProfileLoading(false);
     }
   };
 
@@ -79,7 +120,7 @@ export default function SettingsPage() {
 
   const handleLanguageChange = (lang: Language) => {
     setLanguage(lang);
-    success(t('common', 'saved'), `${lang.toUpperCase()} ${t('settings', 'language').toLowerCase()}`);
+    success(t('common', 'saved'), `${languages.find(l => l.code === lang)?.name} tili o'rnatildi`);
   };
 
   const handleToggleNotification = async (key: keyof typeof notificationSettings) => {
@@ -94,20 +135,33 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
-        success(t('common', 'saved'), t('settings', 'notificationSettings'));
+        success(t('common', 'saved'), "Bildirishnoma sozlamalari saqlandi");
       } else {
-        setNotificationSettings(notificationSettings); // Revert on error
+        setNotificationSettings(notificationSettings);
         error(t('messages', 'error'), t('messages', 'error'));
       }
     } catch (err) {
-      setNotificationSettings(notificationSettings); // Revert on error
+      setNotificationSettings(notificationSettings);
       error(t('messages', 'error'), t('messages', 'error'));
     }
   };
 
+  const isProfileChanged = () => {
+    return (
+      profile.name !== profileOriginal.name ||
+      profile.email !== profileOriginal.email ||
+      profile.phone !== profileOriginal.phone
+    );
+  };
+
   const handleSaveProfile = async () => {
-    if (!profile.name || !profile.email) {
-      error(t('messages', 'error'), t('messages', 'fillRequired'));
+    if (!profile.name.trim()) {
+      error(t('messages', 'error'), 'Ism kiritilishi shart');
+      return;
+    }
+
+    if (profile.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(profile.email)) {
+      error(t('messages', 'error'), "To'g'ri email manzil kiriting");
       return;
     }
 
@@ -116,12 +170,25 @@ export default function SettingsPage() {
       const res = await fetch('/api/settings/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(profile),
+        body: JSON.stringify({
+          name: profile.name.trim(),
+          email: profile.email.trim() || undefined,
+          phone: profile.phone.trim() || undefined,
+        }),
       });
 
       if (res.ok) {
+        const updated = await res.json();
+        const newProfile = {
+          name: updated.name || '',
+          email: updated.email || '',
+          phone: updated.phone || '',
+          role: updated.role || profile.role,
+        };
+        setProfile(newProfile);
+        setProfileOriginal(newProfile);
         await updateSession();
-        success(t('common', 'saved'), t('settings', 'profileSettings'));
+        success(t('common', 'saved'), "Profil ma'lumotlari yangilandi");
       } else {
         const data = await res.json();
         error(t('messages', 'error'), data.error || t('messages', 'error'));
@@ -135,15 +202,15 @@ export default function SettingsPage() {
 
   const handleChangePassword = async () => {
     if (!passwords.current || !passwords.new || !passwords.confirm) {
-      error(t('messages', 'error'), t('messages', 'fillRequired'));
+      error(t('messages', 'error'), "Barcha maydonlarni to'ldiring");
       return;
     }
     if (passwords.new !== passwords.confirm) {
-      error(t('messages', 'error'), t('settings', 'confirmPassword') + ' ' + t('common', 'noData'));
+      error(t('messages', 'error'), "Yangi parollar mos kelmadi");
       return;
     }
     if (passwords.new.length < 6) {
-      error(t('messages', 'error'), t('settings', 'title') + ' 6+');
+      error(t('messages', 'error'), 'Parol kamida 6 ta belgidan iborat bo\'lishi kerak');
       return;
     }
 
@@ -159,7 +226,7 @@ export default function SettingsPage() {
       });
 
       if (res.ok) {
-        success(t('common', 'saved'), t('settings', 'changePassword'));
+        success(t('common', 'saved'), "Parol muvaffaqiyatli o'zgartirildi");
         setPasswords({ current: '', new: '', confirm: '' });
       } else {
         const data = await res.json();
@@ -182,12 +249,12 @@ export default function SettingsPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `ibox-export-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `wareflow-export-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        success(t('common', 'saved'), `${data.summary.totalProducts} ${t('products', 'title').toLowerCase()}`);
+        success(t('common', 'saved'), `${data.summary.totalProducts} ta mahsulot eksport qilindi`);
       } else {
         error(t('messages', 'error'), t('messages', 'error'));
       }
@@ -203,7 +270,7 @@ export default function SettingsPage() {
     if (!file) return;
 
     if (!file.name.endsWith('.json')) {
-      error(t('messages', 'error'), 'JSON fayl tanlang');
+      error(t('messages', 'error'), 'Faqat JSON fayl tanlang');
       return;
     }
 
@@ -220,32 +287,29 @@ export default function SettingsPage() {
 
       if (res.ok) {
         const result = await res.json();
-        const msg = `${result.results.products} ${t('products', 'title').toLowerCase()}, ${result.results.customers} ${t('customers', 'title').toLowerCase()}`;
-        success(t('common', 'saved'), msg);
-        
+        success(
+          "Import muvaffaqiyatli",
+          `${result.results.products} mahsulot, ${result.results.customers} mijoz import qilindi`
+        );
         if (result.results.errors.length > 0) {
-          warning(t('messages', 'error'), `${result.results.errors.length} xatolik`);
+          warning("Ba'zi xatoliklar", `${result.results.errors.length} ta yozuv import qilinmadi`);
         }
       } else {
         const data = await res.json();
         error(t('messages', 'error'), data.error || t('messages', 'error'));
       }
     } catch (err) {
-      error(t('messages', 'error'), 'Invalid JSON file');
+      error(t('messages', 'error'), 'Yaroqsiz JSON fayl');
     } finally {
       setLoading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleBackup = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/settings/backup', {
-        method: 'POST',
-      });
+      const res = await fetch('/api/settings/backup', { method: 'POST' });
 
       if (res.ok) {
         const data = await res.json();
@@ -253,12 +317,12 @@ export default function SettingsPage() {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `ibox-backup-${new Date().toISOString().split('T')[0]}.json`;
+        a.download = `wareflow-backup-${new Date().toISOString().split('T')[0]}.json`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
-        success(t('common', 'saved'), t('settings', 'backup'));
+        success("Zaxira yaratildi", "To'liq ma'lumotlar bazasi zaxirasi yuklab olindi");
       } else {
         error(t('messages', 'error'), t('messages', 'error'));
       }
@@ -270,17 +334,20 @@ export default function SettingsPage() {
   };
 
   const handleClearCache = () => {
-    localStorage.clear();
-    sessionStorage.clear();
-    success(t('common', 'saved'), t('settings', 'clearCache'));
+    if (confirm("Keshni tozalashni tasdiqlaysizmi? Sahifa yangilanadi.")) {
+      localStorage.clear();
+      sessionStorage.clear();
+      success("Kesh tozalandi", "Sahifa yangilanmoqda...");
+      setTimeout(() => window.location.reload(), 1000);
+    }
   };
 
   const handleResetSettings = () => {
-    if (confirm(t('messages', 'confirmDelete'))) {
+    if (confirm("Barcha sozlamalarni qayta o'rnatishni tasdiqlaysizmi?")) {
       localStorage.clear();
       setTheme('light');
       setLanguage('uz');
-      success(t('common', 'saved'), t('settings', 'resetSettings'));
+      success("Sozlamalar qayta o'rnatildi", "Dastlabki holat tiklandi");
     }
   };
 
@@ -289,251 +356,431 @@ export default function SettingsPage() {
     { id: 'notifications', label: t('settings', 'notifications'), icon: Bell },
     { id: 'profile', label: t('settings', 'profile'), icon: User },
     { id: 'security', label: t('settings', 'security'), icon: Shield },
-    { id: 'appearance', label: t('settings', 'appearance'), icon: theme === 'dark' ? Moon : Sun },
+    { id: 'appearance', label: t('settings', 'appearance'), icon: LayoutTemplate },
     { id: 'database', label: t('settings', 'database'), icon: Database },
   ];
 
-  return (
-    <div className="p-6 font-sans w-full h-full bg-slate-50 dark:bg-slate-900">
-      <div className="mb-6">
-        <h1 className="text-3xl font-black text-slate-900 dark:text-white">{t('settings', 'title')}</h1>
-        <p className="text-slate-500 dark:text-slate-400 font-medium text-sm mt-1">{t('settings', 'title')} - {session?.user?.email}</p>
-      </div>
+  const roleLabel = (role: string) => {
+    const roles: Record<string, string> = { ADMIN: 'Administrator', MANAGER: 'Menejer', STAFF: 'Xodim' };
+    return roles[role] || role;
+  };
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-4">
-          <nav className="space-y-1">
-            {tabs.map(tab => {
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`w-full flex items-center justify-between px-4 py-3 rounded-xl text-sm font-medium transition-all ${
-                    activeTab === tab.id
-                      ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                      : 'text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
-                  }`}
-                >
-                  <div className="flex items-center">
-                    <Icon size={18} className="mr-3" />
-                    {tab.label}
-                  </div>
-                  <ChevronRight size={16} className={activeTab === tab.id ? 'text-white' : 'text-slate-400'} />
-                </button>
-              );
-            })}
-          </nav>
+  return (
+    <div className="p-4 sm:p-6 lg:p-8 font-sans w-full h-full min-h-[calc(100vh-64px)] bg-slate-50 dark:bg-[#0b1120]">
+      <div className="max-w-6xl mx-auto">
+        <div className="mb-8 pl-1">
+          <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            {t('settings', 'title')}
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 mt-2 flex items-center gap-2 text-sm font-medium">
+            <UserCircle size={16} />
+            <span>{session?.user?.name || session?.user?.email || 'Yuklanmoqda...'}</span>
+            {profile.role && (
+              <span className="px-2 py-0.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-semibold">
+                {roleLabel(profile.role)}
+              </span>
+            )}
+          </p>
         </div>
 
-        <div className="lg:col-span-3">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-6">
-            {activeTab === 'language' && (
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">{t('settings', 'languageSettings')}</h2>
-                <div className="space-y-4">
-                  {languages.map(lang => (
-                    <button
-                      key={lang.code}
-                      onClick={() => handleLanguageChange(lang.code)}
-                      className={`w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all ${
-                        language === lang.code
-                          ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                          : 'border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Sidebar Navigation */}
+          <div className="w-full lg:w-64 shrink-0">
+            <nav className="space-y-1.5 bg-white dark:bg-slate-900/50 p-2 rounded-2xl shadow-sm border border-slate-200/60 dark:border-slate-800">
+              {tabs.map(tab => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 relative group
+                      ${isActive
+                        ? 'text-indigo-600 dark:text-indigo-400 bg-indigo-50/80 dark:bg-indigo-500/10 shadow-sm shadow-indigo-100/50 dark:shadow-none'
+                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-slate-900 dark:hover:text-white'
                       }`}
-                    >
-                      <div className="flex items-center">
-                        <span className="text-3xl mr-4">{lang.flag}</span>
-                        <div className="text-left">
-                          <div className="font-bold text-slate-800 dark:text-white">{lang.name}</div>
-                          <div className="text-xs text-slate-500 dark:text-slate-400">{lang.code.toUpperCase()}</div>
+                  >
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 w-1.5 h-7 bg-indigo-600 dark:bg-indigo-500 rounded-r-full shadow-[0_0_8px_rgba(79,70,229,0.5)]" />
+                    )}
+                    <Icon size={18} className={`transition-colors ${isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'}`} />
+                    {tab.label}
+                  </button>
+                );
+              })}
+            </nav>
+          </div>
+
+          {/* Content Area */}
+          <div className="flex-1 min-w-0">
+            <div className="bg-white dark:bg-slate-900 shadow-sm border border-slate-200/60 dark:border-slate-800 rounded-3xl p-6 sm:p-8 transition-all min-h-[500px]">
+
+              {/* ── LANGUAGE TAB ── */}
+              {activeTab === 'language' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SectionHeader
+                    icon={<Globe size={20} />}
+                    title={t('settings', 'languageSettings')}
+                    desc="Interfeys tilini tanlang. O'zgartirish darhol qo'llaniladi."
+                  />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {languages.map(lang => {
+                      const isActive = language === lang.code;
+                      return (
+                        <button
+                          key={lang.code}
+                          onClick={() => handleLanguageChange(lang.code)}
+                          className={`flex flex-col items-start p-5 rounded-2xl border-2 transition-all duration-200 relative overflow-hidden group outline-none
+                            ${isActive
+                              ? 'border-indigo-500 bg-indigo-50/50 dark:bg-indigo-500/10 ring-4 ring-indigo-500/10'
+                              : 'border-slate-200 dark:border-slate-800 hover:border-indigo-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900/50 hover:shadow-md hover:shadow-slate-200/50 dark:hover:shadow-none focus-visible:border-indigo-400'
+                            }`}
+                        >
+                          {isActive && (
+                            <div className="absolute top-4 right-4 bg-indigo-500 text-white p-1 rounded-full animate-in zoom-in duration-200 shadow-sm shadow-indigo-500/50">
+                              <Check size={14} strokeWidth={3} />
+                            </div>
+                          )}
+                          <span className="text-4xl mb-3 drop-shadow-sm transition-transform group-hover:scale-110">{lang.flag}</span>
+                          <div className="text-left w-full">
+                            <div className="font-bold text-slate-900 dark:text-white mb-0.5">{lang.name}</div>
+                            <div className="text-xs font-semibold text-slate-500">{lang.desc}</div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── NOTIFICATIONS TAB ── */}
+              {activeTab === 'notifications' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SectionHeader
+                    icon={<Bell size={20} />}
+                    title={t('settings', 'notificationSettings')}
+                    desc="Qaysi holatlarda sizga xabar kelishini sozlang. O'zgarishlar avtomatik saqlanadi."
+                  />
+                  <div className="space-y-3">
+                    {[
+                      {
+                        key: 'email' as const,
+                        label: t('settings', 'emailNotifications'),
+                        desc: 'Har bir savdo/xarid haqida email orqali xabar oling',
+                        icon: <Mail size={18} />,
+                        color: 'bg-blue-100 dark:bg-blue-500/20 text-blue-600 dark:text-blue-400',
+                      },
+                      {
+                        key: 'push' as const,
+                        label: t('settings', 'pushNotifications'),
+                        desc: 'Brauzer push bildirishnomalari',
+                        icon: <Bell size={18} />,
+                        color: 'bg-purple-100 dark:bg-purple-500/20 text-purple-600 dark:text-purple-400',
+                      },
+                      {
+                        key: 'lowStock' as const,
+                        label: t('settings', 'lowStockAlert'),
+                        desc: 'Mahsulot qoldigi kritik darajaga tushganda ogohlantiring',
+                        icon: <AlertCircle size={18} />,
+                        color: 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400',
+                      },
+                      {
+                        key: 'orders' as const,
+                        label: t('settings', 'orderNotifications'),
+                        desc: 'Yangi buyurtmalar va holat o\'zgarishlari haqida xabar',
+                        icon: <Info size={18} />,
+                        color: 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400',
+                      },
+                    ].map(item => {
+                      const isEnabled = notificationSettings[item.key];
+                      return (
+                        <div
+                          key={item.key}
+                          className="flex items-center justify-between p-4 bg-slate-50/80 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800/60 transition-colors"
+                        >
+                          <div className="flex items-center gap-3 pr-4">
+                            <div className={`p-2 rounded-xl ${item.color}`}>
+                              {item.icon}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-sm text-slate-900 dark:text-white">{item.label}</div>
+                              <div className="text-xs text-slate-500 mt-0.5 leading-relaxed">{item.desc}</div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleToggleNotification(item.key)}
+                            className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
+                              isEnabled ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
+                            }`}
+                          >
+                            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${isEnabled ? 'translate-x-5' : 'translate-x-0'}`} />
+                          </button>
                         </div>
-                      </div>
-                      {language === lang.code && (
-                        <div className="bg-indigo-600 text-white rounded-full p-1">
-                          <Check size={16} />
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* ── PROFILE TAB ── */}
+              {activeTab === 'profile' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SectionHeader
+                    icon={<User size={20} />}
+                    title={t('settings', 'profileSettings')}
+                    desc="Shaxsiy ma'lumotlaringizni tahrirlang."
+                  />
+                  {profileLoading ? (
+                    <div className="space-y-4 max-w-xl">
+                      {[1, 2, 3].map(i => (
+                        <div key={i} className="h-12 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-5 max-w-xl">
+                      {/* Role badge */}
+                      {profile.role && (
+                        <div className="flex items-center gap-3 p-4 bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-2xl">
+                          <Shield size={18} className="text-indigo-600 dark:text-indigo-400 shrink-0" />
+                          <div>
+                            <div className="text-xs text-indigo-600/70 dark:text-indigo-400/70 font-medium">Lavozim</div>
+                            <div className="font-bold text-sm text-indigo-700 dark:text-indigo-300">{roleLabel(profile.role)}</div>
+                          </div>
                         </div>
                       )}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {activeTab === 'notifications' && (
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">{t('settings', 'notificationSettings')}</h2>
-                <div className="space-y-4">
-                  {[
-                    { key: 'email' as const, label: t('settings', 'emailNotifications'), desc: 'Har bir savdo/xarid haqida email oling' },
-                    { key: 'push' as const, label: t('settings', 'pushNotifications'), desc: 'Brauzer orqali bildirishnomalar' },
-                    { key: 'lowStock' as const, label: t('settings', 'lowStockAlert'), desc: 'Mahsulot qoldigi kamayganda xabar oling' },
-                    { key: 'orders' as const, label: t('settings', 'orderNotifications'), desc: 'Yangi buyurtmalar haqida xabar' },
-                  ].map(item => (
-                    <div key={item.key} className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
                       <div>
-                        <div className="font-bold text-sm text-slate-800 dark:text-white">{item.label}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">{item.desc}</div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                          {t('common', 'name')} <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <UserCircle size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={profile.name}
+                            onChange={e => setProfile({ ...profile, name: e.target.value })}
+                            placeholder="Ism Familiya"
+                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                          {t('auth', 'email')}
+                        </label>
+                        <div className="relative">
+                          <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="email"
+                            value={profile.email}
+                            onChange={e => setProfile({ ...profile, email: e.target.value })}
+                            placeholder="email@example.com"
+                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                          {t('common', 'phone') || 'Telefon raqam'}
+                        </label>
+                        <div className="relative">
+                          <Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="tel"
+                            value={profile.phone}
+                            onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                            placeholder="+998 90 000 0000"
+                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex items-center gap-3">
+                        <button
+                          onClick={handleSaveProfile}
+                          disabled={loading || !isProfileChanged()}
+                          className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-sm shadow-indigo-500/20"
+                        >
+                          {loading ? (
+                            <RefreshCw className="animate-spin" size={18} />
+                          ) : (
+                            <Save size={18} />
+                          )}
+                          {loading ? t('common', 'loading') : t('common', 'save')}
+                        </button>
+                        {isProfileChanged() && (
+                          <button
+                            onClick={() => setProfile(profileOriginal)}
+                            className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                          >
+                            Bekor qilish
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ── SECURITY TAB ── */}
+              {activeTab === 'security' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SectionHeader
+                    icon={<Shield size={20} />}
+                    title={t('settings', 'security')}
+                    desc="Parolingizni o'zgartiring. Xavfsizlik uchun kuchli parol ishlating."
+                  />
+                  <div className="space-y-5 max-w-xl">
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        {t('settings', 'currentPassword')}
+                      </label>
+                      <PasswordInput
+                        value={passwords.current}
+                        onChange={v => setPasswords({ ...passwords, current: v })}
+                        show={showCurrentPassword}
+                        onToggle={() => setShowCurrentPassword(!showCurrentPassword)}
+                        placeholder="••••••••"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        {t('settings', 'newPassword')}
+                      </label>
+                      <PasswordInput
+                        value={passwords.new}
+                        onChange={v => setPasswords({ ...passwords, new: v })}
+                        show={showNewPassword}
+                        onToggle={() => setShowNewPassword(!showNewPassword)}
+                        placeholder="••••••••"
+                      />
+                      {/* Password strength bar */}
+                      {passwords.new && (
+                        <div className="mt-2 space-y-1">
+                          <div className="flex gap-1">
+                            {[1, 2, 3, 4].map(i => (
+                              <div
+                                key={i}
+                                className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${
+                                  i <= pwdStrength.level ? pwdStrength.color : 'bg-slate-200 dark:bg-slate-700'
+                                }`}
+                              />
+                            ))}
+                          </div>
+                          <p className="text-xs text-slate-500">{pwdStrength.label}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                        {t('settings', 'confirmPassword')}
+                      </label>
+                      <PasswordInput
+                        value={passwords.confirm}
+                        onChange={v => setPasswords({ ...passwords, confirm: v })}
+                        show={showConfirmPassword}
+                        onToggle={() => setShowConfirmPassword(!showConfirmPassword)}
+                        placeholder="••••••••"
+                        hasError={!!(passwords.confirm && passwords.new !== passwords.confirm)}
+                      />
+                      {passwords.confirm && passwords.new !== passwords.confirm && (
+                        <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1">
+                          <AlertCircle size={12} /> Parollar mos kelmadi
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="pt-2">
+                      <button
+                        onClick={handleChangePassword}
+                        disabled={loading || !passwords.current || !passwords.new || !passwords.confirm}
+                        className="flex items-center gap-2 bg-slate-900 dark:bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-slate-800 dark:hover:bg-indigo-700 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-sm"
+                      >
+                        {loading ? <RefreshCw className="animate-spin" size={18} /> : <Shield size={18} />}
+                        {loading ? t('common', 'loading') : t('settings', 'changePassword')}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── APPEARANCE TAB ── */}
+              {activeTab === 'appearance' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SectionHeader
+                    icon={<LayoutTemplate size={20} />}
+                    title={t('settings', 'appearance')}
+                    desc="Interfeys ko'rinishi va mavzularni sozlang."
+                  />
+                  <div className="max-w-xl space-y-4">
+                    {/* Dark/Light toggle card */}
+                    <div className="flex items-center justify-between p-5 bg-slate-50/80 dark:bg-slate-800/30 border border-slate-100 dark:border-slate-800 rounded-2xl">
+                      <div className="flex items-center gap-4">
+                        <div className={`p-3 rounded-xl transition-colors ${theme === 'dark' ? 'bg-indigo-500/20 text-indigo-400' : 'bg-amber-100 text-amber-600'}`}>
+                          {theme === 'dark'
+                            ? <Moon size={22} className="animate-in spin-in-180 duration-500" />
+                            : <Sun size={22} className="animate-in spin-in-180 duration-500" />
+                          }
+                        </div>
+                        <div>
+                          <div className="font-semibold text-sm text-slate-900 dark:text-white">
+                            {theme === 'dark' ? 'Tungi mavzu' : 'Kunduzgi mavzu'}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            {theme === 'dark' ? 'Qoʻyush ranglar, ko\'z uchun qulay' : 'Yorqin va aniq interfeys'}
+                          </div>
+                        </div>
                       </div>
                       <button
-                        onClick={() => handleToggleNotification(item.key)}
-                        className={`w-12 h-6 rounded-full transition-colors relative ${
-                          notificationSettings[item.key] ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'
+                        onClick={() => {
+                          toggleTheme();
+                          success(t('common', 'saved'), theme === 'light' ? 'Tungi mavzu yoqildi' : 'Kunduzgi mavzu yoqildi');
+                        }}
+                        className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-indigo-600 focus:ring-offset-2 dark:focus:ring-offset-slate-900 ${
+                          theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-300'
                         }`}
                       >
-                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${
-                          notificationSettings[item.key] ? 'left-7' : 'left-1'
-                        }`} />
+                        <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${theme === 'dark' ? 'translate-x-5' : 'translate-x-0'}`} />
                       </button>
                     </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
-            {activeTab === 'profile' && (
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">{t('settings', 'profileSettings')}</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">{t('common', 'name')}</label>
-                    <input
-                      type="text"
-                      value={profile.name}
-                      onChange={e => setProfile({ ...profile, name: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">{t('auth', 'email')}</label>
-                    <input
-                      type="email"
-                      value={profile.email}
-                      onChange={e => setProfile({ ...profile, email: e.target.value })}
-                      className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 dark:text-white"
-                    />
-                  </div>
-                  <button
-                    onClick={handleSaveProfile}
-                    disabled={loading}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                  >
-                    {loading ? t('common', 'loading') : t('common', 'save')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'security' && (
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">{t('settings', 'security')}</h2>
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">{t('settings', 'currentPassword')}</label>
-                    <div className="relative">
-                      <input
-                        type={showCurrentPassword ? 'text' : 'password'}
-                        value={passwords.current}
-                        onChange={e => setPasswords({ ...passwords, current: e.target.value })}
-                        placeholder="••••••••"
-                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 dark:text-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        {showCurrentPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">{t('settings', 'newPassword')}</label>
-                    <div className="relative">
-                      <input
-                        type={showNewPassword ? 'text' : 'password'}
-                        value={passwords.new}
-                        onChange={e => setPasswords({ ...passwords, new: e.target.value })}
-                        placeholder="••••••••"
-                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 dark:text-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">{t('settings', 'confirmPassword')}</label>
-                    <div className="relative">
-                      <input
-                        type={showConfirmPassword ? 'text' : 'password'}
-                        value={passwords.confirm}
-                        onChange={e => setPasswords({ ...passwords, confirm: e.target.value })}
-                        placeholder="••••••••"
-                        className="w-full bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg px-3 py-2 pr-10 text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 text-slate-800 dark:text-white"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-                      >
-                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    onClick={handleChangePassword}
-                    disabled={loading}
-                    className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors disabled:opacity-50"
-                  >
-                    {loading ? t('common', 'loading') : t('settings', 'changePassword')}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'appearance' && (
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">{t('settings', 'appearance')}</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
-                    <div className="flex items-center">
-                      {theme === 'dark' ? (
-                        <Moon size={20} className="text-indigo-400 mr-3" />
-                      ) : (
-                        <Sun size={20} className="text-amber-500 mr-3" />
-                      )}
-                      <div>
-                        <div className="font-bold text-sm text-slate-800 dark:text-white">
-                          {theme === 'dark' ? t('settings', 'appearance') : t('settings', 'appearance')}
+                    {/* Theme preview */}
+                    <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-2xl">
+                      <div className="text-xs font-semibold text-slate-500 mb-3 uppercase tracking-wider">Ko'rinish namunasi</div>
+                      <div className={`rounded-xl p-4 ${theme === 'dark' ? 'bg-slate-900 text-white' : 'bg-white text-slate-900 shadow-sm border border-slate-100'}`}>
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-8 h-8 rounded-full bg-indigo-500 flex items-center justify-center text-white text-xs font-bold">W</div>
+                          <div>
+                            <div className="text-sm font-semibold">WareFlow Dashboard</div>
+                            <div className="text-xs text-slate-500">Ombor boshqaruvi</div>
+                          </div>
                         </div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">
-                          {theme === 'dark' ? "Dark mode" : "Light mode"}
+                        <div className="grid grid-cols-3 gap-2">
+                          {['Mahsulotlar', 'Mijozlar', 'Buyurtmalar'].map(item => (
+                            <div key={item} className={`text-center p-2 rounded-lg text-xs font-medium ${theme === 'dark' ? 'bg-slate-800 text-slate-300' : 'bg-slate-50 text-slate-600'}`}>
+                              {item}
+                            </div>
+                          ))}
                         </div>
                       </div>
                     </div>
-                    <button
-                      onClick={() => {
-                        toggleTheme();
-                        success(t('common', 'saved'), theme === 'light' ? "Dark" : "Light");
-                      }}
-                      className={`w-12 h-6 rounded-full transition-colors relative ${theme === 'dark' ? 'bg-indigo-600' : 'bg-slate-300'}`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${theme === 'dark' ? 'left-7' : 'left-1'}`} />
-                    </button>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeTab === 'database' && (
-              <div>
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-6">{t('settings', 'database')}</h2>
-                <div className="space-y-4">
+              {/* ── DATABASE TAB ── */}
+              {activeTab === 'database' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SectionHeader
+                    icon={<Database size={20} />}
+                    title={t('settings', 'database')}
+                    desc="Ma'lumotlarni eksport/import qiling va zaxira nusxa yarating."
+                  />
+
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -542,71 +789,157 @@ export default function SettingsPage() {
                     className="hidden"
                   />
 
-                  <button
-                    onClick={handleExportData}
-                    disabled={loading}
-                    className="w-full text-left p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center disabled:opacity-50"
-                  >
-                    <Download size={20} className="text-indigo-600 mr-3" />
-                    <div>
-                      <div className="font-bold text-sm text-slate-800 dark:text-white">{t('settings', 'exportData')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">JSON formatda yuklab olish</div>
-                    </div>
-                  </button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <DbActionCard
+                      icon={<Download size={20} />}
+                      iconBg="bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400"
+                      borderHover="hover:border-indigo-300 dark:hover:border-indigo-500/50"
+                      title={t('settings', 'exportData')}
+                      desc="Barcha ma'lumotlarni JSON formatda yuklab olish"
+                      onClick={handleExportData}
+                      disabled={loading}
+                      tag="JSON"
+                    />
 
-                  <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={loading}
-                    className="w-full text-left p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center disabled:opacity-50"
-                  >
-                    <Upload size={20} className="text-emerald-600 mr-3" />
-                    <div>
-                      <div className="font-bold text-sm text-slate-800 dark:text-white">{t('settings', 'importData')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">JSON fayldan yuklash</div>
-                    </div>
-                  </button>
+                    <DbActionCard
+                      icon={<Upload size={20} />}
+                      iconBg="bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                      borderHover="hover:border-emerald-300 dark:hover:border-emerald-500/50"
+                      title={t('settings', 'importData')}
+                      desc="Avvaldan eksport qilingan JSON faylni yuklash"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={loading}
+                      tag="JSON"
+                    />
 
-                  <button
-                    onClick={handleBackup}
-                    disabled={loading}
-                    className="w-full text-left p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center disabled:opacity-50"
-                  >
-                    <RefreshCw size={20} className="text-blue-600 mr-3" />
-                    <div>
-                      <div className="font-bold text-sm text-slate-800 dark:text-white">{t('settings', 'backup')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">To'liq zaxira nusxa</div>
-                    </div>
-                  </button>
+                    <DbActionCard
+                      icon={<RefreshCw size={20} />}
+                      iconBg="bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400"
+                      borderHover="hover:border-blue-300 dark:hover:border-blue-500/50"
+                      title={t('settings', 'backup')}
+                      desc="Barcha jadvallarni o'z ichiga olgan to'liq zaxira yaratish"
+                      onClick={handleBackup}
+                      disabled={loading}
+                      tag="Backup"
+                    />
 
-                  <button
-                    onClick={handleClearCache}
-                    disabled={loading}
-                    className="w-full text-left p-4 bg-slate-50 dark:bg-slate-700/50 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center disabled:opacity-50"
-                  >
-                    <Trash size={20} className="text-amber-600 mr-3" />
-                    <div>
-                      <div className="font-bold text-sm text-slate-800 dark:text-white">{t('settings', 'clearCache')}</div>
-                      <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">LocalStorage va SessionStorage</div>
-                    </div>
-                  </button>
+                    <DbActionCard
+                      icon={<Trash size={20} />}
+                      iconBg="bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                      borderHover="hover:border-amber-300 dark:hover:border-amber-500/50"
+                      title={t('settings', 'clearCache')}
+                      desc="Brauzer keshini va vaqtinchalik ma'lumotlarni tozalash"
+                      onClick={handleClearCache}
+                      disabled={loading}
+                      tag="Cache"
+                    />
+                  </div>
 
-                  <button
-                    onClick={handleResetSettings}
-                    disabled={loading}
-                    className="w-full text-left p-4 bg-red-50 dark:bg-red-900/20 rounded-xl hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors flex items-center disabled:opacity-50"
-                  >
-                    <RefreshCw size={20} className="text-red-600 mr-3" />
-                    <div>
-                      <div className="font-bold text-sm text-red-600 dark:text-red-400">{t('settings', 'resetSettings')}</div>
-                      <div className="text-xs text-red-500 dark:text-red-400/70 mt-1">Barcha sozlamalarni tiklash</div>
-                    </div>
-                  </button>
+                  {/* Danger zone */}
+                  <div>
+                    <div className="h-px w-full bg-slate-100 dark:bg-slate-800 mb-4" />
+                    <div className="text-xs font-semibold text-red-500 uppercase tracking-wider mb-3">Xavfli zona</div>
+                    <button
+                      onClick={handleResetSettings}
+                      disabled={loading}
+                      className="flex items-center gap-3 w-full p-4 bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl hover:bg-red-100 dark:hover:bg-red-500/20 transition-all disabled:opacity-50 group hover:shadow-sm"
+                    >
+                      <div className="p-2 bg-white dark:bg-red-500/20 rounded-lg text-red-500 group-hover:scale-110 transition-transform">
+                        <RefreshCw size={18} />
+                      </div>
+                      <div className="text-left">
+                        <div className="font-semibold text-sm text-red-600 dark:text-red-400">{t('settings', 'resetSettings')}</div>
+                        <div className="text-xs text-red-500/80 mt-0.5">Til, mavzu va boshqa sozlamalarni dastlabki holatga qaytarish</div>
+                      </div>
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+
+            </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Sub-components ───────────────────────────────────
+
+function SectionHeader({ icon, title, desc }: { icon: React.ReactNode; title: string; desc: string }) {
+  return (
+    <div className="mb-6">
+      <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 mb-1">
+        <div className="p-2 bg-indigo-100 dark:bg-indigo-500/20 rounded-lg text-indigo-600 dark:text-indigo-400 mr-1">
+          {icon}
+        </div>
+        {title}
+      </h2>
+      <p className="text-slate-500 text-sm pl-[3.25rem]">{desc}</p>
+    </div>
+  );
+}
+
+function PasswordInput({
+  value, onChange, show, onToggle, placeholder, hasError = false,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  show: boolean;
+  onToggle: () => void;
+  placeholder?: string;
+  hasError?: boolean;
+}) {
+  return (
+    <div className="relative group">
+      <input
+        type={show ? 'text' : 'password'}
+        value={value}
+        onChange={e => onChange(e.target.value)}
+        placeholder={placeholder}
+        className={`w-full bg-slate-50 dark:bg-slate-900/50 border rounded-xl px-4 py-2.5 pr-10 text-sm outline-none transition-all focus:ring-2 text-slate-900 dark:text-white placeholder-slate-400
+          ${hasError
+            ? 'border-red-400 focus:ring-red-500/20 focus:border-red-500'
+            : 'border-slate-200 dark:border-slate-700/50 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500'
+          }`}
+      />
+      <button
+        type="button"
+        onClick={onToggle}
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+      >
+        {show ? <EyeOff size={18} /> : <Eye size={18} />}
+      </button>
+    </div>
+  );
+}
+
+function DbActionCard({
+  icon, iconBg, borderHover, title, desc, onClick, disabled, tag,
+}: {
+  icon: React.ReactNode;
+  iconBg: string;
+  borderHover: string;
+  title: string;
+  desc: string;
+  onClick: () => void;
+  disabled: boolean;
+  tag: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`group flex flex-col items-start p-5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl ${borderHover} hover:shadow-md hover:shadow-slate-200/50 dark:hover:shadow-none transition-all disabled:opacity-50 disabled:pointer-events-none text-left`}
+    >
+      <div className="flex items-center justify-between w-full mb-3">
+        <div className={`p-2.5 rounded-xl ${iconBg} group-hover:scale-110 transition-transform`}>
+          {icon}
+        </div>
+        <span className="text-[10px] font-bold tracking-wider text-slate-400 uppercase">{tag}</span>
+      </div>
+      <div className="font-semibold text-sm text-slate-900 dark:text-white">{title}</div>
+      <div className="text-xs text-slate-500 mt-1 leading-relaxed">{desc}</div>
+    </button>
   );
 }

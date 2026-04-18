@@ -10,8 +10,8 @@ export default withAuth(
       authorized: ({ token, req }) => {
         const pathname = req.nextUrl.pathname;
         
-        // Allow login page without auth
-        if (pathname === "/login") {
+        // Allow login page and register API without auth
+        if (pathname === "/login" || pathname.startsWith("/api/register")) {
           return true;
         }
         

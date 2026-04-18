@@ -12,7 +12,7 @@ export async function GET() {
 
     const user = await prisma.user.findUnique({
       where: { email: session.user.email },
-      select: { id: true, name: true, email: true, role: true },
+      select: { id: true, name: true, email: true, phone: true, role: true, warehouseId: true },
     });
 
     if (!user) {
@@ -34,25 +34,42 @@ export async function PUT(request: Request) {
     }
 
     const body = await request.json();
-    const { name, email } = body;
+    const { name, email, phone } = body;
 
-    if (!name || !email) {
-      return NextResponse.json({ error: 'Name and email are required' }, { status: 400 });
+    if (!name) {
+      return NextResponse.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    // Check if email is already taken by another user
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
-
-    if (existingUser && existingUser.email !== session.user.email) {
-      return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
+    // Check if new email is already taken by another user
+    if (email && email !== session.user.email) {
+      const emailTaken = await prisma.user.findUnique({ where: { email } });
+      if (emailTaken) {
+        return NextResponse.json({ error: 'Email already in use' }, { status: 400 });
+      }
     }
+
+    // Check if new phone is already taken by another user
+    if (phone) {
+      const currentUser = await prisma.user.findUnique({
+        where: { email: session.user.email },
+        select: { phone: true },
+      });
+      if (phone !== currentUser?.phone) {
+        const phoneTaken = await prisma.user.findUnique({ where: { phone } });
+        if (phoneTaken) {
+          return NextResponse.json({ error: 'Phone already in use' }, { status: 400 });
+        }
+      }
+    }
+
+    const updateData: any = { name };
+    if (email) updateData.email = email;
+    if (phone !== undefined) updateData.phone = phone;
 
     const updatedUser = await prisma.user.update({
       where: { email: session.user.email },
-      data: { name, email },
-      select: { id: true, name: true, email: true, role: true },
+      data: updateData,
+      select: { id: true, name: true, email: true, phone: true, role: true },
     });
 
     return NextResponse.json(updatedUser);

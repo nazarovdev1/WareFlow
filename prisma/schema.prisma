@@ -1,5 +1,6 @@
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -56,12 +57,12 @@ model Product {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  stockEntries       StockEntry[]
-  transferItems      TransferItem[]
+  stockEntries        StockEntry[]
+  transferItems       TransferItem[]
   inventoryAuditItems InventoryAuditItem[]
-  priceListItems     PriceListItem[]
-  purchaseItems      PurchaseItem[]
-  orderItems         OrderItem[]
+  priceListItems      PriceListItem[]
+  purchaseItems       PurchaseItem[]
+  orderItems          OrderItem[]
 
   @@index([categoryId])
   @@index([name])
@@ -84,6 +85,8 @@ model Warehouse {
   inventoryAuditItems InventoryAuditItem[]
   purchases        Purchase[]
   orders           Order[]
+  users            User[]
+  userRequests     UserRequest[]
 }
 
 model StockEntry {
@@ -335,17 +338,94 @@ enum UserRole {
   STAFF
 }
 
+enum SubscriptionStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+enum UserRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model UserRequest {
+  id           String            @id @default(cuid())
+  name         String
+  phone        String            @unique
+  email        String?
+  password     String
+  warehouseId  String?
+  warehouse    Warehouse?        @relation(fields: [warehouseId], references: [id])
+  status       UserRequestStatus @default(PENDING)
+  note         String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([phone])
+  @@index([status])
+  @@index([warehouseId])
+}
+
 model User {
-  id        String   @id @default(cuid())
-  name      String?
-  email     String   @unique
-  password  String
-  role      UserRole @default(STAFF)
+  id          String   @id @default(cuid())
+  name        String?
+  email       String?  @unique
+  phone       String?  @unique
+  password    String
+  role        UserRole @default(STAFF)
+  isActive    Boolean  @default(true)
+  permissions String[] @default([])
+
+  warehouseId String?
+  warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  subscriptions     Subscription[]
+  userNotifications UserNotification[]
+  settings          UserSettings?
+
+  @@index([warehouseId])
+  @@index([phone])
+}
+
+// ─── USER SETTINGS ───────────────────────────────
+
+model UserSettings {
+  id                  String  @id @default(cuid())
+  userId              String  @unique
+  user                User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emailNotifications  Boolean @default(true)
+  pushNotifications   Boolean @default(false)
+  lowStockAlerts      Boolean @default(true)
+  orderNotifications  Boolean @default(true)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
 
-// ─── NEW DOMAINS: PURCHASE, SALES, CASHBOX, EXCHANGE RATE ────────
+model Subscription {
+  id        String   @id @default(cuid())
+  amount    Float
+  currency  String   @default("USD")
+  dueDate   DateTime
+  isPaid    Boolean  @default(false)
+  paidDate  DateTime?
+  note      String?
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([dueDate])
+}
 
 // ─── PURCHASE DOMAIN (KIRIM) ────────────────────
 
@@ -356,21 +436,21 @@ enum PurchaseStatus {
 }
 
 model Purchase {
-  id                String         @id @default(cuid())
-  docNumber         String         @unique
-  date              DateTime       @default(now())
-  supplierId        String
-  supplier          Supplier       @relation(fields: [supplierId], references: [id])
-  warehouseId       String
-  warehouse         Warehouse      @relation(fields: [warehouseId], references: [id])
-  totalAmount       Float          @default(0)
-  status            PurchaseStatus @default(DRAFT)
-  notes             String?
+  id          String         @id @default(cuid())
+  docNumber   String         @unique
+  date        DateTime       @default(now())
+  supplierId  String
+  supplier    Supplier       @relation(fields: [supplierId], references: [id])
+  warehouseId String
+  warehouse   Warehouse      @relation(fields: [warehouseId], references: [id])
+  totalAmount Float          @default(0)
+  status      PurchaseStatus @default(DRAFT)
+  notes       String?
 
-  items             PurchaseItem[]
+  items       PurchaseItem[]
 
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   @@index([supplierId])
   @@index([warehouseId])
@@ -401,24 +481,24 @@ enum OrderStatus {
 }
 
 model Order {
-  id                String       @id @default(cuid())
-  docNumber         String       @unique
-  date              DateTime     @default(now())
-  customerId        String?
-  customer          Customer?    @relation(fields: [customerId], references: [id])
-  warehouseId       String
-  warehouse         Warehouse    @relation(fields: [warehouseId], references: [id])
-  totalAmount       Float        @default(0)
-  discount          Float        @default(0)
-  finalAmount       Float        @default(0)
-  status            OrderStatus  @default(COMPLETED)
-  paymentMethod     String?      // CASH, CARD, TRANSFER
-  notes             String?
+  id            String      @id @default(cuid())
+  docNumber     String      @unique
+  date          DateTime    @default(now())
+  customerId    String?
+  customer      Customer?   @relation(fields: [customerId], references: [id])
+  warehouseId   String
+  warehouse     Warehouse   @relation(fields: [warehouseId], references: [id])
+  totalAmount   Float       @default(0)
+  discount      Float       @default(0)
+  finalAmount   Float       @default(0)
+  status        OrderStatus @default(COMPLETED)
+  paymentMethod String?     // CASH, CARD, TRANSFER
+  notes         String?
 
-  items             OrderItem[]
+  items         OrderItem[]
 
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
 
   @@index([customerId])
   @@index([warehouseId])
@@ -426,14 +506,14 @@ model Order {
 }
 
 model OrderItem {
-  id         String   @id @default(cuid())
-  orderId    String
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  productId  String
-  product    Product  @relation(fields: [productId], references: [id])
-  quantity   Float
-  price      Float    // Selling price at the time of sale
-  total      Float
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  quantity  Float
+  price     Float   // Selling price at the time of sale
+  total     Float
 
   @@index([orderId])
   @@index([productId])
@@ -448,13 +528,13 @@ enum CashboxType {
 }
 
 model Cashbox {
-  id           String               @id @default(cuid())
-  name         String               // "Asosiy Kassa", "Humo", "Uzcard", "Tranzit"
-  type         CashboxType          @default(CASH)
-  currency     String               @default("UZS")
-  balance      Float                @default(0)
-  createdAt    DateTime             @default(now())
-  updatedAt    DateTime             @updatedAt
+  id           String            @id @default(cuid())
+  name         String            // "Asosiy Kassa", "Humo", "Uzcard", "Tranzit"
+  type         CashboxType       @default(CASH)
+  currency     String            @default("UZS")
+  balance      Float             @default(0)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
 
   transactions CashTransaction[]
 }
@@ -489,4 +569,39 @@ model ExchangeRate {
   rate      Float    // masalan: 12500
   date      DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── ADMIN NOTIFICATIONS ─────────────────────────
+
+model AdminNotification {
+  id        String   @id @default(cuid())
+  type      String   // "new_user_request" | "order" | "stock_low" | "info"
+  title     String
+  message   String
+  link      String?  // Click qilganda qaerga o'tishi
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isRead])
+  @@index([createdAt])
+}
+
+// ─── USER NOTIFICATIONS ──────────────────────────
+
+model UserNotification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // "product_transfer" | "info" | "warning"
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([createdAt])
 }

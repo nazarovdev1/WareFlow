@@ -1,18 +1,19 @@
 'use client';
 
-import { Bell, Search, Settings, Check, X, User, LogOut, ChevronDown } from 'lucide-react';
+import { Bell, Search, Settings, Check, X, User, LogOut, ChevronDown, UserPlus } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { signOut, useSession } from 'next-auth/react';
 
 interface AppNotification {
   id: string;
-  type: 'order' | 'purchase' | 'stock' | 'info';
+  type: string;
   title: string;
   message: string;
-  date: string;
-  read: boolean;
+  link?: string | null;
+  isRead: boolean;
+  createdAt: string;
 }
 
 export default function Header() {
@@ -20,51 +21,89 @@ export default function Header() {
   const { data: session } = useSession();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([
-    {
-      id: '1',
-      type: 'order',
-      title: 'Yangi buyurtma',
-      message: 'Mijoz buyurtma qildi - $1,200',
-      date: new Date().toISOString(),
-      read: false,
-    },
-    {
-      id: '2',
-      type: 'stock',
-      title: 'Kam qoldiq ogohlantirishi',
-      message: 'Silk Texture obosi qoldigi kamaydi',
-      date: new Date(Date.now() - 3600000).toISOString(),
-      read: false,
-    },
-    {
-      id: '3',
-      type: 'purchase',
-      message: 'Ta\'minotchidan xarid yakunlandi',
-      title: 'Xarid yakunlandi',
-      date: new Date(Date.now() - 7200000).toISOString(),
-      read: true,
-    },
-  ]);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const isAdmin = (session?.user as any)?.role === 'ADMIN';
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Admin → AdminNotification API, User → UserNotification API
+  const apiBase = isAdmin ? '/api/notifications' : '/api/user-notifications';
 
-  const markAsRead = (id: string) => {
-    setNotifications(notifications.map(n =>
-      n.id === id ? { ...n, read: true } : n
-    ));
+  const fetchNotifications = useCallback(async () => {
+    if (!session) return;
+    try {
+      const res = await fetch(`${apiBase}?limit=30`);
+      if (!res.ok) return;
+      const json = await res.json();
+      setNotifications(json.data || []);
+      setUnreadCount(json.unreadCount ?? 0);
+    } catch (e) {
+      // network xatosi — jimgina o'tkazib yuboramiz
+    }
+  }, [session, apiBase]);
+
+  // Dastlabki yuklash va 30 soniyalik polling
+  useEffect(() => {
+    if (!session) return;
+    fetchNotifications();
+    intervalRef.current = setInterval(fetchNotifications, 30000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [fetchNotifications, session]);
+
+  const handleBellClick = () => {
+    setShowNotifications(prev => !prev);
+    if (!showNotifications) {
+      fetchNotifications(); // bell bosilganda ham yangilaydi
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotifications(notifications.map(n => ({ ...n, read: true })));
+  const markAsRead = async (id: string) => {
+    // Optimistic update
+    setNotifications(prev =>
+      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
+    );
+    setUnreadCount(prev => Math.max(0, prev - 1));
+    try {
+      const endpoint = isAdmin ? `/api/notifications/${id}` : `/api/user-notifications/${id}`;
+      await fetch(endpoint, { method: 'PATCH' });
+    } catch (e) {
+      fetchNotifications();
+    }
   };
 
-  const deleteNotification = (id: string) => {
-    setNotifications(notifications.filter(n => n.id !== id));
+  const markAllAsRead = async () => {
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+    setUnreadCount(0);
+    try {
+      const endpoint = isAdmin ? '/api/notifications/mark-all-read' : '/api/user-notifications/mark-all-read';
+      await fetch(endpoint, { method: 'PATCH' });
+    } catch (e) {
+      fetchNotifications();
+    }
   };
 
-  const clearAll = () => {
+  const deleteNotification = async (id: string) => {
+    const n = notifications.find(n => n.id === id);
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    if (n && !n.isRead) setUnreadCount(prev => Math.max(0, prev - 1));
+    try {
+      const endpoint = isAdmin ? `/api/notifications/${id}` : `/api/user-notifications/${id}`;
+      await fetch(endpoint, { method: 'DELETE' });
+    } catch (e) {
+      fetchNotifications();
+    }
+  };
+
+  const clearAll = async () => {
     setNotifications([]);
+    setUnreadCount(0);
+    try {
+      await fetch(apiBase, { method: 'DELETE' });
+    } catch (e) {
+      fetchNotifications();
+    }
   };
 
   const handleLogout = async () => {
@@ -73,9 +112,11 @@ export default function Header() {
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
+      case 'new_user_request': return '👤';
       case 'order': return '🛒';
       case 'purchase': return '📦';
-      case 'stock': return '⚠️';
+      case 'stock_low': return '⚠️';
+      case 'product_transfer': return '📦';
       case 'info': return 'ℹ️';
       default: return '🔔';
     }
@@ -83,7 +124,7 @@ export default function Header() {
 
   const timeAgo = (date: string) => {
     const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-    if (seconds < 60) return t('common', 'loading');
+    if (seconds < 60) return 'Hozirgina';
     if (seconds < 3600) return `${Math.floor(seconds / 60)} daqiqa oldin`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)} soat oldin`;
     return `${Math.floor(seconds / 86400)} kun oldin`;
@@ -101,16 +142,16 @@ export default function Header() {
       </div>
 
       <div className="flex items-center space-x-4">
-        {/* Notifications Bell */}
+        {/* Notifications Bell — barcha userlar uchun */}
         <div className="relative">
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={handleBellClick}
             className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors relative p-2 focus:outline-none"
           >
             <Bell size={20} />
             {unreadCount > 0 && (
-              <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {unreadCount}
+              <span className="absolute top-0 right-0 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center animate-pulse">
+                {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
           </button>
@@ -125,7 +166,14 @@ export default function Header() {
               <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[60] overflow-hidden">
                 <div className="p-4 border-b border-slate-100 dark:border-slate-700">
                   <div className="flex items-center justify-between">
-                    <h3 className="font-bold text-slate-800 dark:text-slate-200">{t('settings', 'notifications')}</h3>
+                    <h3 className="font-bold text-slate-800 dark:text-slate-200">
+                      {t('settings', 'notifications')}
+                      {unreadCount > 0 && (
+                        <span className="ml-2 text-xs bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-semibold">
+                          {unreadCount}
+                        </span>
+                      )}
+                    </h3>
                     {notifications.length > 0 && (
                       <div className="flex items-center gap-2">
                         <button
@@ -157,20 +205,41 @@ export default function Header() {
                       <div
                         key={notification.id}
                         className={`p-4 border-b border-slate-50 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors ${
-                          !notification.read ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : ''
+                          !notification.isRead ? 'bg-indigo-50/50 dark:bg-indigo-900/20' : ''
                         }`}
                       >
                         <div className="flex items-start gap-3">
-                          <span className="text-xl">{getNotificationIcon(notification.type)}</span>
+                          <span className="text-xl flex-shrink-0">{getNotificationIcon(notification.type)}</span>
                           <div className="flex-1 min-w-0">
-                            <p className={`text-sm ${!notification.read ? 'font-bold text-slate-800 dark:text-slate-200' : 'font-medium text-slate-700 dark:text-slate-300'}`}>
-                              {notification.title}
-                            </p>
+                            {notification.link ? (
+                              <Link
+                                href={notification.link}
+                                onClick={() => {
+                                  markAsRead(notification.id);
+                                  setShowNotifications(false);
+                                }}
+                                className={`text-sm block hover:underline ${
+                                  !notification.isRead
+                                    ? 'font-bold text-slate-800 dark:text-slate-200'
+                                    : 'font-medium text-slate-700 dark:text-slate-300'
+                                }`}
+                              >
+                                {notification.title}
+                              </Link>
+                            ) : (
+                              <p className={`text-sm ${
+                                !notification.isRead
+                                  ? 'font-bold text-slate-800 dark:text-slate-200'
+                                  : 'font-medium text-slate-700 dark:text-slate-300'
+                              }`}>
+                                {notification.title}
+                              </p>
+                            )}
                             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{notification.message}</p>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{timeAgo(notification.date)}</p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{timeAgo(notification.createdAt)}</p>
                           </div>
-                          <div className="flex items-center gap-1">
-                            {!notification.read && (
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            {!notification.isRead && (
                               <button
                                 onClick={() => markAsRead(notification.id)}
                                 className="p-1 text-indigo-500 dark:text-indigo-400 hover:text-indigo-600 dark:hover:text-indigo-300"
@@ -193,15 +262,17 @@ export default function Header() {
                   )}
                 </div>
 
-                <div className="p-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
-                  <Link
-                    href="/settings"
-                    onClick={() => setShowNotifications(false)}
-                    className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center justify-center gap-1"
-                  >
-                    {t('settings', 'title')} <Settings size={12} />
-                  </Link>
-                </div>
+                {isAdmin && (
+                  <div className="p-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900">
+                    <Link
+                      href="/requests"
+                      onClick={() => setShowNotifications(false)}
+                      className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 font-medium flex items-center justify-center gap-1"
+                    >
+                      Foydalanuvchi so&apos;rovlari <UserPlus size={12} />
+                    </Link>
+                  </div>
+                )}
               </div>
             </>
           )}
