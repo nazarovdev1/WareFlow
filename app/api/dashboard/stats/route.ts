@@ -1,16 +1,30 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 
-// GET /api/dashboard/stats — Aggregated dashboard statistics with real-time chart data
+const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
+  try { return await fn(); } catch { return fallback; }
+};
+
+async function fetchCBURate(): Promise<number | null> {
+  try {
+    const res = await fetch('https://cbu.uz/uz/arkhiv-kursov-valyut/json/', { next: { revalidate: 3600 } });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const usd = data.find((c: any) => c.Ccy === 'USD');
+    return usd ? parseFloat(usd.Rate) : null;
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const period = searchParams.get('period') || 'month'; // today, week, month, year
+    const period = searchParams.get('period') || 'month';
 
-    // Calculate date range based on period
     const now = new Date();
     let startDate = new Date();
-    
+
     switch (period) {
       case 'today':
         startDate.setHours(0, 0, 0, 0);
@@ -28,319 +42,180 @@ export async function GET(request: Request) {
         startDate.setMonth(now.getMonth() - 1);
     }
 
-    // Fetch all data in parallel for performance
     const [
       totalProducts,
-      totalWarehouses,
-      totalCustomers,
-      totalSuppliers,
-      stockStats,
       customerDebt,
       supplierDebt,
-      todayTransfers,
-      activePriceLists,
-      outOfStockCount,
+      orders,
+      purchases,
+      categories,
+      cashboxes,
+      recentOrders,
+      topProducts,
+      warehouses,
+      exchangeRate,
+      cbuRateData,
     ] = await Promise.all([
-      prisma.product.count(),
-      prisma.warehouse.count(),
-      prisma.customer.count(),
-      prisma.supplier.count(),
-      prisma.stockEntry.aggregate({
-        _sum: { quantity: true },
-      }),
-      prisma.customer.aggregate({
-        _sum: { balanceUSD: true, balanceUZS: true },
-      }),
-      prisma.supplier.aggregate({
-        _sum: { balanceUSD: true, balanceUZS: true },
-      }),
-      prisma.transfer.count({
-        where: {
-          date: {
-            gte: new Date(new Date().setHours(0, 0, 0, 0)),
-          },
+      safe(() => prisma.product.count(), 0),
+      safe(() => prisma.customer.aggregate({ _sum: { balanceUSD: true, balanceUZS: true } }), { _sum: { balanceUSD: 0, balanceUZS: 0 } }),
+      safe(() => prisma.supplier.aggregate({ _sum: { balanceUSD: true, balanceUZS: true } }), { _sum: { balanceUSD: 0, balanceUZS: 0 } }),
+      safe(() => prisma.order.findMany({
+        where: { status: 'COMPLETED', date: { gte: startDate } },
+        select: { date: true, finalAmount: true },
+        orderBy: { date: 'asc' },
+      }), []),
+      safe(() => prisma.purchase.findMany({
+        where: { status: 'COMPLETED', date: { gte: startDate } },
+        select: { date: true, totalAmount: true },
+        orderBy: { date: 'asc' },
+      }), []),
+      safe(() => prisma.category.findMany({
+        include: { _count: { select: { products: true } } },
+      }), []),
+      safe(() => prisma.cashbox.findMany({
+        select: { balance: true, currency: true },
+      }), []),
+      safe(() => prisma.order.findMany({
+        take: 5,
+        orderBy: { date: 'desc' },
+        include: {
+          customer: { select: { fullName: true } },
+          _count: { select: { items: true } },
         },
-      }),
-      prisma.priceList.count({ where: { isActive: true } }),
-      prisma.stockEntry.count({ where: { quantity: { lte: 0 } } }),
+      }), []),
+      safe(async () => {
+        const items = await prisma.orderItem.findMany({
+          select: {
+            productId: true,
+            product: { select: { name: true } },
+            quantity: true,
+            total: true,
+          },
+        });
+        const map = new Map<string, { name: string; totalQty: number; totalRevenue: number }>();
+        for (const item of items) {
+          const existing = map.get(item.productId);
+          if (existing) {
+            existing.totalQty += Number(item.quantity) || 0;
+            existing.totalRevenue += Number(item.total) || 0;
+          } else {
+            map.set(item.productId, {
+              name: item.product.name,
+              totalQty: Number(item.quantity) || 0,
+              totalRevenue: Number(item.total) || 0,
+            });
+          }
+        }
+        return Array.from(map.values())
+          .sort((a, b) => b.totalRevenue - a.totalRevenue)
+          .slice(0, 5);
+      }, []),
+      safe(() => prisma.warehouse.findMany({
+        include: {
+          _count: { select: { stockEntries: true } },
+          stockEntries: { select: { quantity: true, costPrice: true } },
+        },
+        orderBy: { name: 'asc' },
+      }), []),
+      safe(() => prisma.exchangeRate.findFirst({
+        where: { currency: 'USD' },
+        orderBy: { date: 'desc' },
+      }), null),
+      fetchCBURate(),
     ]);
 
-    // Fetch orders (with error handling)
-    let orders: any[] = [];
-    try {
-      orders = await prisma.order.findMany({
-        where: {
-          status: 'COMPLETED',
-          date: { gte: startDate },
-        },
-        select: {
-          date: true,
-          finalAmount: true,
-        },
-        orderBy: {
-          date: 'asc',
-        },
-      });
-    } catch (err) {
-      console.warn('Orders table not available:', err);
-    }
-
-    // Fetch purchases (with error handling)
-    let purchases: any[] = [];
-    try {
-      purchases = await prisma.purchase.findMany({
-        where: {
-          status: 'COMPLETED',
-          date: { gte: startDate },
-        },
-        select: {
-          date: true,
-          totalAmount: true,
-        },
-        orderBy: {
-          date: 'asc',
-        },
-      });
-    } catch (err) {
-      console.warn('Purchases table not available:', err);
-    }
-
-    // Fetch categories (with error handling)
-    let categories: any[] = [];
-    try {
-      categories = await prisma.category.findMany({
-        include: {
-          _count: {
-            select: { products: true },
-          },
-          products: {
-            select: {
-              stockEntries: {
-                select: {
-                  quantity: true,
-                },
-              },
-            },
-          },
-        },
-      });
-    } catch (err) {
-      console.warn('Categories not available:', err);
-    }
-
-    // Fetch products with stock (with error handling)
-    let productsWithStock: any[] = [];
-    try {
-      productsWithStock = await prisma.product.findMany({
-        take: 10,
-        select: {
-          id: true,
-          name: true,
-          stockEntries: {
-            select: {
-              quantity: true,
-              costPrice: true,
-            },
-          },
-          _count: {
-            select: {
-              orderItems: true,
-            },
-          },
-        },
-        orderBy: {
-          stockEntries: {
-            _count: 'desc',
-          },
-        },
-      });
-    } catch (err) {
-      console.warn('Products/stock not available:', err);
-    }
-
-    // Fetch recent orders (with error handling)
-    let recentOrders: any[] = [];
-    try {
-      recentOrders = await prisma.order.findMany({
-        take: 5,
-        where: { status: 'COMPLETED' },
-        orderBy: { date: 'desc' },
-        include: {
-          customer: {
-            select: {
-              fullName: true,
-            },
-          },
-          items: {
-            select: {
-              quantity: true,
-              total: true,
-            },
-          },
-        },
-      });
-    } catch (err) {
-      console.warn('Recent orders not available:', err);
-    }
-
-    // Fetch recent transactions (with error handling)
-    let recentTransactions: any[] = [];
-    try {
-      recentTransactions = await prisma.customerTransaction.findMany({
-        take: 5,
-        orderBy: { date: 'desc' },
-        include: {
-          customer: {
-            select: {
-              fullName: true,
-            },
-          },
-        },
-      });
-    } catch (err) {
-      console.warn('Recent transactions not available:', err);
-    }
-
-    // Process orders data for chart
-    const salesByDate = orders.reduce((acc, order) => {
+    const salesByDate = (orders as any[]).reduce((acc, order) => {
       const dateStr = order.date.toISOString().split('T')[0];
-      if (!acc[dateStr]) {
-        acc[dateStr] = { date: dateStr, amount: 0 };
-      }
+      if (!acc[dateStr]) acc[dateStr] = { date: dateStr, amount: 0 };
       acc[dateStr].amount += Number(order.finalAmount) || 0;
       return acc;
     }, {} as Record<string, { date: string; amount: number }>);
 
-    // Process purchases data for chart
-    const purchasesByDate = purchases.reduce((acc, purchase) => {
+    const purchasesByDate = (purchases as any[]).reduce((acc, purchase) => {
       const dateStr = purchase.date.toISOString().split('T')[0];
-      if (!acc[dateStr]) {
-        acc[dateStr] = { date: dateStr, amount: 0 };
-      }
+      if (!acc[dateStr]) acc[dateStr] = { date: dateStr, amount: 0 };
       acc[dateStr].amount += Number(purchase.totalAmount) || 0;
       return acc;
     }, {} as Record<string, { date: string; amount: number }>);
 
-    // Merge all dates and create chart data
-    const allDates = new Set([
-      ...Object.keys(salesByDate),
-      ...Object.keys(purchasesByDate),
-    ]);
-
-    const sortedDates = Array.from(allDates).sort();
-    
-    const chartData = sortedDates.map(date => {
+    const allDates = new Set([...Object.keys(salesByDate), ...Object.keys(purchasesByDate)]);
+    const chartData = Array.from(allDates).sort().map(date => {
       const sales = salesByDate[date]?.amount || 0;
       const purchase = purchasesByDate[date]?.amount || 0;
-      const profit = sales - purchase;
-      
       return {
-        name: new Date(date).toLocaleDateString('uz-UZ', { 
-          month: 'short', 
-          day: 'numeric' 
-        }),
+        name: new Date(date).toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' }),
         savdo: Math.round(sales * 100) / 100,
         kirim: Math.round(purchase * 100) / 100,
-        foyda: Math.round(profit * 100) / 100,
+        foyda: Math.round((sales - purchase) * 100) / 100,
       };
     });
 
-    // Process category data
-    const categoryChartData = categories.map(cat => {
-      const totalStock = cat.products.reduce((sum: number, product: any) => {
-        return sum + product.stockEntries.reduce((s: number, entry: any) => s + entry.quantity, 0);
-      }, 0);
-      
-      return {
-        name: cat.name,
-        value: cat._count.products,
-        stock: Math.round(totalStock),
-      };
-    }).filter(cat => cat.value > 0);
+    const categoryChartData = (categories as any[])
+      .map((cat: any) => ({ name: cat.name, value: cat._count.products }))
+      .filter(cat => cat.value > 0);
 
-    // Process top products
-    const topProducts = productsWithStock.map(product => {
-      const totalQuantity = product.stockEntries.reduce((sum: number, entry: any) => sum + entry.quantity, 0);
-      const totalValue = product.stockEntries.reduce((sum: number, entry: any) => sum + (entry.quantity * entry.costPrice), 0);
-      
-      return {
-        name: product.name,
-        quantity: Math.round(totalQuantity),
-        value: Math.round(totalValue * 100) / 100,
-        orders: product._count.orderItems,
-      };
-    }).sort((a, b) => b.value - a.value).slice(0, 8);
+    const totalCashUSD = (cashboxes as any[])
+      .filter((cb: any) => cb.currency === 'USD')
+      .reduce((sum: number, cb: any) => sum + cb.balance, 0);
 
-    // Calculate total cash in cashboxes
-    let totalCashUSD = 0;
-    let totalCashUZS = 0;
-    try {
-      const cashboxes = await prisma.cashbox.findMany({
-        select: {
-          balance: true,
-          currency: true,
-        },
-      });
+    const totalCashUZS = (cashboxes as any[])
+      .filter((cb: any) => cb.currency === 'UZS')
+      .reduce((sum: number, cb: any) => sum + cb.balance, 0);
 
-      totalCashUSD = cashboxes
-        .filter(cb => cb.currency === 'USD')
-        .reduce((sum, cb) => sum + cb.balance, 0);
-      
-      totalCashUZS = cashboxes
-        .filter(cb => cb.currency === 'UZS')
-        .reduce((sum, cb) => sum + cb.balance, 0);
-    } catch (err) {
-      console.warn('Cashboxes not available:', err);
-    }
-
-    // Format recent orders
-    const recentOrdersData = recentOrders.map(order => ({
+    const recentOrdersData = (recentOrders as any[]).map((order: any) => ({
       id: order.id,
       docNumber: order.docNumber,
-      customer: order.customer?.fullName || 'Noma\'lum mijoz',
+      customer: order.customer?.fullName || 'Noma\'lum',
       amount: order.finalAmount,
       date: order.date,
-      itemsCount: order.items.length,
+      itemsCount: order._count?.items || 0,
+      paymentMethod: order.paymentMethod,
+      status: order.status,
     }));
 
-    // Format recent transactions
-    const recentTransactionsData = recentTransactions.map(tx => ({
-      id: tx.id,
-      customer: tx.customer.fullName,
-      type: tx.type,
-      amount: tx.amount,
-      currency: tx.currency,
-      date: tx.date,
-      description: tx.description,
-    }));
+    const warehouseStockData = (warehouses as any[]).map((wh: any) => {
+      const totalQty = wh.stockEntries.reduce((s: number, e: any) => s + e.quantity, 0);
+      const totalVal = wh.stockEntries.reduce((s: number, e: any) => s + (e.quantity * e.costPrice), 0);
+      return {
+        id: wh.id,
+        name: wh.name,
+        district: wh.district,
+        productCount: wh._count?.stockEntries || 0,
+        totalQuantity: Math.round(totalQty),
+        totalValue: Math.round(totalVal * 100) / 100,
+      };
+    });
 
-    return NextResponse.json({
-      // Summary stats
-      totalProducts,
-      totalWarehouses,
-      totalCustomers,
-      totalSuppliers,
-      totalStockQuantity: stockStats._sum.quantity || 0,
+    const financialSummary = {
+      cashUSD: Math.round(totalCashUSD * 100) / 100,
+      cashUZS: Math.round(totalCashUZS * 100) / 100,
       customerDebtUSD: customerDebt._sum.balanceUSD || 0,
       customerDebtUZS: customerDebt._sum.balanceUZS || 0,
       supplierDebtUSD: supplierDebt._sum.balanceUSD || 0,
       supplierDebtUZS: supplierDebt._sum.balanceUZS || 0,
-      todayTransfers,
-      activePriceLists,
-      outOfStockCount,
-      totalCashUSD: Math.round(totalCashUSD * 100) / 100,
-      totalCashUZS: Math.round(totalCashUZS * 100) / 100,
-      
-      // Chart data
+      netBalance: Math.round(((totalCashUSD - (supplierDebt._sum.balanceUSD || 0) + (customerDebt._sum.balanceUSD || 0)) * 100)) / 100,
+    };
+
+    const effectiveRate = (cbuRateData as number | null) || (exchangeRate as any)?.rate || 12500;
+
+    return NextResponse.json({
+      totalProducts,
+      totalCashUSD: financialSummary.cashUSD,
+      customerDebtUSD: financialSummary.customerDebtUSD,
+      supplierDebtUSD: financialSummary.supplierDebtUSD,
       salesPurchasesChart: chartData,
       categoryChart: categoryChartData,
-      topProductsChart: topProducts,
-      
-      // Recent activity
       recentOrders: recentOrdersData,
-      recentTransactions: recentTransactionsData,
-      
-      // Metadata
+      topProducts: topProducts as any[],
+      warehouseStock: warehouseStockData,
+      financialSummary,
+      exchangeRate: {
+        rate: effectiveRate,
+        cbuRate: cbuRateData as number | null,
+        manualRate: (exchangeRate as any)?.rate || null,
+        source: (cbuRateData as number | null) ? 'CBU' : (exchangeRate ? 'MANUAL' : 'DEFAULT'),
+        date: new Date().toISOString(),
+      },
       period,
       startDate,
       endDate: now,
@@ -351,4 +226,3 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Internal server error', details: errorMessage }, { status: 500 });
   }
 }
-

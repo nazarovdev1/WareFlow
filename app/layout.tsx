@@ -3,6 +3,7 @@ import './globals.css';
 import { Providers } from './providers';
 import { NotificationProvider } from '@/lib/NotificationContext';
 import ToastContainer from '@/components/ToastContainer';
+import MobileRedirect from '@/components/MobileRedirect';
 
 export const metadata: Metadata = {
   title: 'IBOX - Ombor Tizimi',
@@ -19,6 +20,7 @@ export default function RootLayout({
       <body className="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-200 transition-colors duration-200">
         <Providers>
           <NotificationProvider>
+            <MobileRedirect />
             {children}
             <ToastContainer />
           </NotificationProvider>

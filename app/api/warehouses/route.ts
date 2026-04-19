@@ -5,6 +5,7 @@ import { z } from 'zod';
 const WarehouseSchema = z.object({
   name: z.string().min(1, "Ombor nomi majburiy"),
   address: z.string().optional().nullable(),
+  district: z.string().optional().nullable(),
   isDefault: z.boolean().default(false),
 });
 
@@ -38,12 +39,13 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const { name, address, isDefault } = result.data;
+    const { name, address, district, isDefault } = result.data;
 
     const warehouse = await prisma.warehouse.create({
       data: {
         name,
         address,
+        district,
         isDefault,
       },
     });

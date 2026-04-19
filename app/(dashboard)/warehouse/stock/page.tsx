@@ -1,11 +1,13 @@
 'use client';
-import { Search, Filter, Download, ArrowDownUp, Package, ChevronDown, X, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, TrendingUp, TrendingDown } from 'lucide-react';
+import { Search, Filter, Download, ArrowDownUp, Package, ChevronDown, X, ArrowUpRight, ArrowDownLeft, ArrowRightLeft, TrendingUp, TrendingDown, Plus, MapPin, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import * as XLSX from 'xlsx';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function StockPage() {
   const { t } = useLanguage();
+  const { addNotification } = useNotification();
   const [stock, setStock] = useState<any[]>([]);
   const [summary, setSummary] = useState({ totalQuantity: 0, totalValue: 0 });
   const [warehouses, setWarehouses] = useState<any[]>([]);
@@ -16,14 +18,18 @@ export default function StockPage() {
   const [movements, setMovements] = useState<any[]>([]);
   const [movementsLoading, setMovementsLoading] = useState(false);
   const [movementFilter, setMovementFilter] = useState('ALL');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newWarehouse, setNewWarehouse] = useState({ name: '', address: '', district: '' });
+  const [saving, setSaving] = useState(false);
 
-  // Fetch warehouses for filter
-  useEffect(() => {
+  const loadWarehouses = () => {
     fetch('/api/warehouses')
       .then(res => res.json())
       .then(data => setWarehouses(Array.isArray(data) ? data : data.data || []))
       .catch(console.error);
-  }, []);
+  };
+
+  useEffect(() => { loadWarehouses(); }, []);
 
   // Fetch stock data
   useEffect(() => {
@@ -92,6 +98,26 @@ export default function StockPage() {
     XLSX.writeFile(wb, filename);
   };
 
+  const handleAddWarehouse = async () => {
+    if (!newWarehouse.name.trim()) return;
+    setSaving(true);
+    try {
+      const res = await fetch('/api/warehouses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newWarehouse),
+      });
+      if (!res.ok) throw new Error();
+      loadWarehouses();
+      setShowAddModal(false);
+      setNewWarehouse({ name: '', address: '', district: '' });
+      addNotification('success', 'Ombor qo\'shildi', `${newWarehouse.name} muvaffaqiyatli yaratildi`);
+    } catch {
+      addNotification('error', 'Xatolik', 'Omborni qo\'shishda xatolik yuz berdi');
+    }
+    setSaving(false);
+  };
+
   return (
     <div className="p-8 font-sans w-full h-full flex flex-col bg-[#fdfdfd] dark:bg-slate-900 relative text-slate-800 dark:text-slate-200">
       <div className="mb-8">
@@ -99,6 +125,12 @@ export default function StockPage() {
         <div className="flex justify-between items-center">
           <h1 className="text-[32px] font-black text-[#0f172a] dark:text-slate-100 tracking-tight">{t('warehouse', 'stockRemaining')}</h1>
           <div className="flex space-x-3">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="flex items-center px-4 py-2.5 bg-teal-600 dark:bg-teal-700 hover:bg-teal-700 dark:hover:bg-teal-600 text-white text-sm font-bold rounded-lg shadow-sm transition"
+            >
+              <Plus size={16} className="mr-2" /> Ombor qo'shish
+            </button>
             <button
               onClick={handleExportExcel}
               className="flex items-center px-4 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-lg hover:bg-slate-50 dark:hover:bg-slate-600 transition"
@@ -130,9 +162,9 @@ export default function StockPage() {
              className="w-full text-sm font-medium text-slate-700 dark:text-slate-200 bg-transparent outline-none cursor-pointer appearance-none"
            >
              <option value="">{t('warehouse', 'title')}ni {t('common', 'select')} ({t('common', 'all')})</option>
-             {warehouses.map(w => (
-               <option key={w.id} value={w.id} className="dark:bg-slate-700">{w.name}</option>
-             ))}
+              {warehouses.map(w => (
+                <option key={w.id} value={w.id} className="dark:bg-slate-700">{w.name}{w.district ? ` — ${w.district}` : ''}</option>
+              ))}
            </select>
            <ChevronDown size={16} className="text-slate-400 dark:text-slate-500 pointer-events-none" />
          </div>
@@ -199,6 +231,52 @@ export default function StockPage() {
            <div className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mt-2">{t('warehouse', 'title')} {t('common', 'total')} {t('products', 'costPrice')} (Cost)</div>
          </div>
       </div>
+
+      {/* Add Warehouse Modal */}
+      {showAddModal && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setShowAddModal(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[60] w-full max-w-md overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Package size={18} className="text-teal-500" /> Yangi ombor qo'shish
+              </h3>
+              <button onClick={() => setShowAddModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1.5">Ombor nomi *</label>
+                <input type="text" value={newWarehouse.name} onChange={e => setNewWarehouse(p => ({ ...p, name: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+                  placeholder="Masalan: Asosiy ombor" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1.5">Manzil</label>
+                <input type="text" value={newWarehouse.address} onChange={e => setNewWarehouse(p => ({ ...p, address: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+                  placeholder="Masalan: Toshkent, Chilonzor" />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider block mb-1.5 flex items-center gap-1"><MapPin size={12} /> Tuman / Filial</label>
+                <input type="text" value={newWarehouse.district} onChange={e => setNewWarehouse(p => ({ ...p, district: e.target.value }))}
+                  className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-500"
+                  placeholder="Masalan: Chilonzor tuman" />
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900">
+              <button onClick={() => setShowAddModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                Bekor qilish
+              </button>
+              <button onClick={handleAddWarehouse} disabled={saving || !newWarehouse.name.trim()}
+                className="px-5 py-2.5 bg-teal-600 dark:bg-teal-700 hover:bg-teal-700 dark:hover:bg-teal-600 text-white text-sm font-bold rounded-lg shadow-sm transition disabled:opacity-50 flex items-center gap-2">
+                <Check size={14} /> {saving ? 'Saqlanmoqda...' : 'Saqlash'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }

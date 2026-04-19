@@ -49,9 +49,9 @@ async function main() {
   if (whCount === 0) {
     await prisma.warehouse.createMany({
       data: [
-        { name: 'Asosiy ombor', address: 'Toshkent' },
-        { name: 'Filial ombor', address: 'Samarqand' },
-        { name: "Do'kon ombori", address: 'Buxoro' },
+        { name: 'Asosiy ombor', address: 'Toshkent', district: 'Chilonzor' },
+        { name: 'Filial ombor', address: 'Samarqand', district: 'Samarqand shahar' },
+        { name: "Do'kon ombori", address: 'Buxoro', district: 'Buxoro shahar' },
       ],
     });
     console.log('Created sample warehouses');

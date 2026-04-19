@@ -1,7 +1,7 @@
 'use client';
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { Search, Plus, Filter, Download, ArrowUpDown, MoreHorizontal, Image as ImageIcon, PackageCheck, Truck, AlertTriangle, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
+import { Search, Plus, Filter, Download, ArrowUpDown, MoreHorizontal, Image as ImageIcon, PackageCheck, Truck, AlertTriangle, ChevronLeft, ChevronRight, MoreVertical, Edit3 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -105,7 +105,11 @@ export default function InventoryPage() {
                   <div className="text-xs font-bold text-slate-600 dark:text-slate-300 whitespace-pre-line leading-tight">{new Date(item.updatedAt).toLocaleDateString()}</div>
                 </td>
                 <td className="px-6 py-5 text-center">
-                  <button onClick={() => {
+                  <div className="flex items-center justify-center gap-1">
+                    <Link href={`/inventory/${item.id}/edit`} className="text-indigo-400 hover:text-indigo-600 transition bg-white dark:bg-slate-800 border border-transparent hover:border-indigo-200 dark:hover:border-indigo-800 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 p-1.5 rounded-md shadow-sm" title="Tahrirlash">
+                      <Edit3 size={15} />
+                    </Link>
+                    <button onClick={() => {
                     if(confirm("Haqiqatan ham ushbu mahsulotni o'chirmoqchimisiz?")) {
                       dispatch(deleteProduct(item.id))
                         .unwrap()
@@ -115,6 +119,7 @@ export default function InventoryPage() {
                   }} className="text-red-400 hover:text-red-600 transition bg-white dark:bg-slate-800 border border-transparent hover:border-red-200 dark:hover:border-red-800 hover:bg-red-50 dark:hover:bg-red-900/20 p-1.5 rounded-md shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"></path><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
                   </button>
+                  </div>
                 </td>
               </tr>
             )})}
