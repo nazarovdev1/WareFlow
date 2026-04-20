@@ -165,7 +165,7 @@ export default function MobileAddProductPage() {
         </div>
 
         <button onClick={handleSubmit} disabled={submitting}
-          className="w-full py-4 bg-indigo-600 text-white font-black text-[13px] rounded-2xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50">
+          className="w-full py-4 bg-indigo-600 text-white font-black text-[13px] rounded-2xl flex items-center justify-center gap-2 active:scale-95 transition-transform disabled:opacity-50">
           {submitting ? 'Yuborilmoqda...' : <><Check size={18} /> Mahsulotni qo'shish</>}
         </button>
       </div>

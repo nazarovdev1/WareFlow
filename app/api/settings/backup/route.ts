@@ -69,7 +69,7 @@ export async function POST() {
     const backup = {
       backupDate: new Date().toISOString(),
       version: '1.0',
-      database: 'IBOX',
+      database: 'WAREFLOW',
       tables: {
         users,
         products,

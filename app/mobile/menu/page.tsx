@@ -1,5 +1,6 @@
 'use client';
 
+import MobileHeader from '@/components/mobile/MobileHeader';
 import { useSession, signOut } from 'next-auth/react';
 import { User, LogOut, Lock, Edit3, Check, X, Save, Moon, Globe, CreditCard, Shield, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
@@ -81,9 +82,7 @@ export default function MobileMenuPage() {
 
   return (
     <div className="w-full min-h-screen pb-28">
-      <div className="px-6 pt-8 pb-4 sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-40">
-        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Sozlamalar</h1>
-      </div>
+      <MobileHeader title="Sozlamalar" backHref="/mobile" />
 
       <div className="px-6 space-y-6 mt-2">
         {/* Profile Card */}

@@ -17,7 +17,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 function getInitialLanguage(): Language {
   // Check localStorage first
   if (typeof window !== 'undefined') {
-    const savedLang = localStorage.getItem('ibox_language') as Language;
+    const savedLang = localStorage.getItem('wareflow_language') as Language;
     if (savedLang && ['uz', 'ru', 'en'].includes(savedLang)) {
       return savedLang;
     }
@@ -38,7 +38,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
 
   const setLanguage = useCallback((lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('ibox_language', lang);
+    localStorage.setItem('wareflow_language', lang);
     document.documentElement.lang = lang;
   }, []);
 

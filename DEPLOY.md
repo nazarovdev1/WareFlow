@@ -4,7 +4,7 @@
 
 ### 1️⃣ Dependencies o'rnatish
 ```bash
-cd /home/fedora/VolumeD/IBOX
+cd /home/fedora/VolumeD/WareFlow
 npm install
 ```
 
@@ -21,7 +21,7 @@ git push origin main
 1. [app.netlify.com](https://app.netlify.com) ga kiring
 2. **"Add new site"** → **"Import an existing project"**
 3. Git provider'ni tanlang (GitHub/GitLab/Bitbucket)
-4. **IBOX** repository'ni tanlang
+4. **WareFlow** repository'ni tanlang
 5. Build settings avtomatik to'ldiriladi (`netlify.toml` dan)
 6. **"Deploy site"** tugmasini bosing
 
@@ -62,7 +62,7 @@ Deploy tugagandan keyin:
 1. **Site URL** ni oching
 2. **Login sahifasi** ochilishi kerak
 3. **Admin credentials:**
-   - Email: `admin@ibox.uz`
+   - Email: `admin@wareflow.uz`
    - Password: `admin`
 
 ---

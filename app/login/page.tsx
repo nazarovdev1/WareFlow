@@ -140,7 +140,7 @@ export default function LoginPage() {
               }`}>
                 <Home className={theme === 'dark' ? 'text-teal-400' : 'text-[#2dd4bf]'} size={24} />
               </div>
-              <h1 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-[#0f172a]'}`}>IBOX</h1>
+              <h1 className={`text-3xl font-black tracking-tight ${theme === 'dark' ? 'text-white' : 'text-[#0f172a]'}`}>WAREFLOW</h1>
             </div>
             <p className={`text-xs font-bold tracking-widest uppercase mb-6 ${theme === 'dark' ? 'text-slate-400' : 'text-[#0f172a]/60'}`}>Kirish</p>
           </div>
@@ -198,7 +198,7 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-[11px] font-bold text-slate-500">IBOX WAREHOUSE SOLUTIONS</p>
+            <p className="text-[11px] font-bold text-slate-500">WAREFLOW WAREHOUSE SOLUTIONS</p>
           </div>
         </div>
       ) : (
@@ -290,13 +290,13 @@ export default function LoginPage() {
           </div>
 
           <div className="mt-8 text-center">
-            <p className="text-[11px] font-bold text-slate-500">IBOX WAREHOUSE SOLUTIONS</p>
+            <p className="text-[11px] font-bold text-slate-500">WAREFLOW WAREHOUSE SOLUTIONS</p>
           </div>
         </div>
       )}
 
       <p className="absolute bottom-6 text-[9px] text-white/30 font-bold tracking-[0.2em] uppercase">
-        © 2024 IBOX WAREHOUSE SOLUTIONS. ALL RIGHTS RESERVED.
+        © 2024 WAREFLOW WAREHOUSE SOLUTIONS. ALL RIGHTS RESERVED.
       </p>
     </div>
   );

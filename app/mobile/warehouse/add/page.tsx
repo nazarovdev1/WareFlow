@@ -1,5 +1,6 @@
 'use client';
 
+import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ArrowRightLeft, Search, Plus, Minus, Trash2, MapPin, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -72,12 +73,7 @@ export default function MobileWarehouseAddPage() {
 
   return (
     <div className="w-full min-h-screen pb-48">
-      <div className="px-6 pt-8 pb-4 flex items-center gap-3 sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-40">
-        <Link href="/mobile/warehouse" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800 active:scale-95 transition-transform">
-          <ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" />
-        </Link>
-        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Yangi ko'chirish</h1>
-      </div>
+      <MobileHeader title="Yangi ko'chirish" backHref="/mobile/warehouse" />
 
       <div className="px-6 space-y-5 mt-4">
         {/* Warehouses */}

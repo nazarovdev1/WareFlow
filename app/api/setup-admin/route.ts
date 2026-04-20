@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const adminEmail = 'admin@ibox.uz';
+    const adminEmail = 'admin@wareflow.uz';
     const adminPassword = 'admin';
 
     const existing = await prisma.user.findUnique({ where: { email: adminEmail } });

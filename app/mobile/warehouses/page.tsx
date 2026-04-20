@@ -1,7 +1,8 @@
 'use client';
 
+import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Plus, MapPin, Building, Package, Edit3, Trash2, X, Check, Search } from 'lucide-react';
+import { Plus, MapPin, Building, Package, Edit3, Trash2, X, Check, Search } from 'lucide-react';
 import Link from 'next/link';
 import { useNotification } from '@/lib/NotificationContext';
 
@@ -90,18 +91,16 @@ export default function MobileWarehousesPage() {
 
   return (
     <div className="w-full min-h-screen pb-28">
-      <div className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-40">
-        <div className="flex items-center gap-3">
-          <Link href="/mobile" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800 active:scale-95 transition-transform">
-            <ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" />
-          </Link>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Filiallar</h1>
-        </div>
-        <button onClick={openAdd}
-          className="p-2.5 bg-teal-600 text-white rounded-full shadow-lg shadow-teal-500/30 active:scale-95 transition-transform">
-          <Plus size={20} />
-        </button>
-      </div>
+      <MobileHeader 
+        title="Filiallar" 
+        backHref="/mobile" 
+        rightAction={
+          <button onClick={openAdd}
+            className="p-2.5 bg-teal-600 text-white rounded-full shadow-lg shadow-teal-500/30 active:scale-95 transition-transform">
+            <Plus size={20} />
+          </button>
+        } 
+      />
 
       <div className="px-6 mb-5 mt-2">
         <div className="relative">

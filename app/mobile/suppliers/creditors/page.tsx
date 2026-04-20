@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Search, ArrowUpRight, Truck, DollarSign, Calendar } from 'lucide-react';
+import { Search, ArrowUpRight, Truck, DollarSign, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import MobileHeader from '@/components/mobile/MobileHeader';
 
 export default function MobileCreditorsPage() {
   const [transactions, setTransactions] = useState<any[]>([]);
@@ -31,19 +32,14 @@ export default function MobileCreditorsPage() {
 
   return (
     <div className="w-full min-h-screen pb-28">
-      <div className="px-6 pt-8 pb-4 flex items-center gap-3 sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-40">
-        <Link href="/mobile/suppliers" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800 active:scale-95 transition-transform">
-          <ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" />
-        </Link>
-        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Kreditorlar</h1>
-      </div>
+      <MobileHeader title="Kreditorlar" backHref="/mobile/suppliers" />
 
       <div className="px-6 mb-5 mt-2 grid grid-cols-2 gap-3">
-        <div className="bg-gradient-to-br from-rose-500 to-rose-600 p-4 rounded-2xl text-white">
+        <div className="bg-rose-600 p-4 rounded-2xl text-white">
           <div className="text-[9px] font-bold text-rose-100 uppercase tracking-wider mb-1">Qarz USD</div>
           <div className="text-xl font-black">${Math.abs(totalUSD).toLocaleString()}</div>
         </div>
-        <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-4 rounded-2xl text-white">
+        <div className="bg-amber-600 p-4 rounded-2xl text-white">
           <div className="text-[9px] font-bold text-amber-100 uppercase tracking-wider mb-1">Qarz UZS</div>
           <div className="text-xl font-black">{Math.abs(totalUZS).toLocaleString()}</div>
         </div>

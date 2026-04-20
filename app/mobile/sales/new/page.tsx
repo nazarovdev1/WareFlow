@@ -199,7 +199,7 @@ export default function MobileNewSalePage() {
 
       {/* Sticky Bottom Summary */}
       <div className="fixed bottom-24 left-6 right-6 z-40">
-        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800 p-5 rounded-[40px] shadow-2xl flex flex-col gap-4">
+        <div className="bg-white/80 dark:bg-slate-900/80 backdrop-blur-xl border border-slate-200/60 dark:border-slate-800 p-5 rounded-2xl shadow-sm flex flex-col gap-4">
           <div className="flex justify-between items-center px-2">
             <div>
               <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">Jami summa</div>
@@ -213,7 +213,7 @@ export default function MobileNewSalePage() {
           <button 
             onClick={handleSubmit}
             disabled={loading || cartItems.length === 0}
-            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-4 rounded-full shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 transition-all active:scale-95"
+            className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-black py-4 rounded-2xl flex items-center justify-center gap-2 transition-all active:scale-95"
           >
             {loading ? 'Yuborilmoqda...' : (
               <>

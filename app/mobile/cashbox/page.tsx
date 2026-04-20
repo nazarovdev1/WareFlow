@@ -1,7 +1,8 @@
 'use client';
 
+import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Wallet, Plus, Minus, ArrowUpRight, ArrowDownRight, CreditCard, Building2, X } from 'lucide-react';
+import { Wallet, Plus, Minus, ArrowUpRight, ArrowDownRight, CreditCard, Building2, X } from 'lucide-react';
 import Link from 'next/link';
 import { useNotification } from '@/lib/NotificationContext';
 
@@ -97,27 +98,21 @@ export default function MobileCashboxPage() {
 
   return (
     <div className="w-full min-h-screen pb-28">
-      <div className="px-6 pt-8 pb-4 flex items-center gap-3 sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-40">
-        <Link href="/mobile" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800 active:scale-95 transition-transform">
-          <ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" />
-        </Link>
-        <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Kassa</h1>
-      </div>
+      <MobileHeader title="Kassa" backHref="/mobile" />
 
       {/* Total Balance */}
       <div className="px-6 mb-6 mt-2">
-        <div className="bg-gradient-to-br from-indigo-500 via-indigo-600 to-violet-700 p-5 rounded-3xl shadow-xl shadow-indigo-500/20 text-white relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-3xl -mr-10 -mt-10"></div>
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl shadow-sm text-slate-900 dark:text-white relative overflow-hidden">
           <div className="relative z-10">
-            <div className="text-[10px] font-bold text-indigo-100 uppercase tracking-wider mb-3">Umumiy balans</div>
+            <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Umumiy balans</div>
             <div className="flex items-end gap-4">
               <div>
                 <div className="text-3xl font-black">${totalUSD.toLocaleString()}</div>
-                <div className="text-[11px] text-indigo-200 mt-0.5">USD</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">USD</div>
               </div>
               <div className="pb-1">
                 <div className="text-xl font-black">{totalUZS.toLocaleString()}</div>
-                <div className="text-[11px] text-indigo-200 mt-0.5">UZS</div>
+                <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">UZS</div>
               </div>
             </div>
           </div>

@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, ShoppingCart, ChevronLeft, Plus, Eye, Filter, Calendar, Users, TrendingUp, DollarSign, BarChart3, X, AlertTriangle } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Eye, Filter, Calendar, Users, TrendingUp, DollarSign, BarChart3, X, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
+import MobileHeader from '@/components/mobile/MobileHeader';
 
 export default function MobileSalesPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -73,17 +74,15 @@ export default function MobileSalesPage() {
   return (
     <div className="w-full min-h-screen pb-28">
       {/* Header */}
-      <div className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-40">
-        <div className="flex items-center gap-3">
-          <Link href="/mobile" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800 active:scale-95 transition-transform">
-            <ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" />
+      <MobileHeader 
+        title="Savdolar" 
+        backHref="/mobile" 
+        rightAction={
+          <Link href="/mobile/sales/new" className="p-2.5 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform">
+            <Plus size={20} />
           </Link>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">Savdolar</h1>
-        </div>
-        <Link href="/mobile/sales/new" className="p-2.5 bg-indigo-600 text-white rounded-full shadow-lg shadow-indigo-500/30 active:scale-95 transition-transform">
-          <Plus size={20} />
-        </Link>
-      </div>
+        } 
+      />
 
       {/* Tabs */}
       <div className="px-6 mb-5">
@@ -175,16 +174,16 @@ export default function MobileSalesPage() {
         <div className="px-6 space-y-4">
           {/* KPI Cards */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="bg-gradient-to-br from-indigo-500 to-indigo-600 p-4 rounded-2xl text-white">
-              <div className="text-[9px] font-bold text-indigo-100 uppercase tracking-wider mb-1">Jami savdo</div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-slate-900 dark:text-white">
+              <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Jami savdo</div>
               <div className="text-lg font-black">{completedOrders.length}</div>
             </div>
-            <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 rounded-2xl text-white">
-              <div className="text-[9px] font-bold text-emerald-100 uppercase tracking-wider mb-1">Tushum</div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-slate-900 dark:text-white">
+              <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Tushum</div>
               <div className="text-lg font-black">${totalRevenue.toLocaleString()}</div>
             </div>
-            <div className="bg-gradient-to-br from-violet-500 to-violet-600 p-4 rounded-2xl text-white">
-              <div className="text-[9px] font-bold text-violet-100 uppercase tracking-wider mb-1">O'rtacha</div>
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-slate-900 dark:text-white">
+              <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">O'rtacha</div>
               <div className="text-lg font-black">${Math.round(avgCheck).toLocaleString()}</div>
             </div>
           </div>

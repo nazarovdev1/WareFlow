@@ -1,7 +1,8 @@
 'use client';
 
+import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Search, UserPlus, Check, X, Clock, Shield, Building2 } from 'lucide-react';
+import { Search, UserPlus, Check, X, Clock, Shield, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useNotification } from '@/lib/NotificationContext';
 import { AdminGuard } from '@/components/mobile/PermissionGuard';
@@ -55,15 +56,15 @@ export default function MobileRequestsPage() {
   return (
     <AdminGuard>
       <div className="w-full min-h-screen pb-28">
-        <div className="px-6 pt-8 pb-4 flex items-center gap-3 sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-40">
-          <Link href="/mobile" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800 active:scale-95 transition-transform">
-            <ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" />
-          </Link>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">So'rovlar</h1>
-          {pendingCount > 0 && (
-            <span className="ml-auto px-2.5 py-1 bg-amber-500 text-white text-[10px] font-black rounded-full">{pendingCount}</span>
-          )}
-        </div>
+        <MobileHeader 
+          title="So'rovlar" 
+          backHref="/mobile" 
+          rightAction={
+            pendingCount > 0 ? (
+              <span className="px-2.5 py-1 bg-amber-500 text-white text-[10px] font-black rounded-full">{pendingCount}</span>
+            ) : null
+          } 
+        />
 
         <div className="px-6 mb-5 mt-2 flex gap-2">
           {['PENDING', 'APPROVED', 'REJECTED', 'ALL'].map(s => (

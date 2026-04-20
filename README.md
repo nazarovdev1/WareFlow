@@ -196,7 +196,7 @@ npm run dev
 
 > 🌐 **Brauzerda oching:** [http://localhost:3000](http://localhost:3000)
 >
-> 🔑 **Default Admin:** `admin@ibox.uz` / `admin`
+> 🔑 **Default Admin:** `admin@wareflow.uz` / `admin`
 
 ---
 

@@ -6,7 +6,7 @@ import ToastContainer from '@/components/ToastContainer';
 import MobileRedirect from '@/components/MobileRedirect';
 
 export const metadata: Metadata = {
-  title: 'IBOX - Ombor Tizimi',
+  title: 'WAREFLOW - Ombor Tizimi',
   description: 'Professional Warehouse Management System',
 };
 

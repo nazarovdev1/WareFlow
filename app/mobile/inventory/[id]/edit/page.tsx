@@ -1,5 +1,6 @@
 'use client';
 
+import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Package, Tag, DollarSign, Check } from 'lucide-react';
 import Link from 'next/link';
@@ -65,10 +66,7 @@ export default function MobileEditProductPage() {
   if (loading) {
     return (
       <div className="w-full min-h-screen pb-28">
-        <div className="px-6 pt-8 pb-4 flex items-center gap-3">
-          <Link href="/mobile/inventory" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800"><ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" /></Link>
-          <h1 className="text-xl font-black text-slate-900 dark:text-white">Tahrirlash</h1>
-        </div>
+        <MobileHeader title="Tahrirlash" backHref="/mobile/inventory" />
         <div className="px-6 space-y-4 mt-4">{Array(4).fill(0).map((_, i) => <div key={i} className="h-20 bg-white dark:bg-slate-900 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800" />)}</div>
       </div>
     );

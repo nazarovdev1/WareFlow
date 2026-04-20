@@ -300,7 +300,7 @@ export default function Header() {
                 {session?.user?.name || 'Admin'}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                {session?.user?.email || 'admin@ibox.uz'}
+                {session?.user?.email || 'admin@wareflow.uz'}
               </div>
             </div>
             <ChevronDown size={16} className={`text-slate-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
@@ -319,7 +319,7 @@ export default function Header() {
                     {session?.user?.name || 'Admin User'}
                   </div>
                   <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    {session?.user?.email || 'admin@ibox.uz'}
+                    {session?.user?.email || 'admin@wareflow.uz'}
                   </div>
                 </div>
 

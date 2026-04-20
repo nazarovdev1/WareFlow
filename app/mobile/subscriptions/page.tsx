@@ -1,7 +1,8 @@
 'use client';
 
+import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Search, CreditCard, Check, Clock, AlertTriangle, DollarSign, Plus, X } from 'lucide-react';
+import { Search, CreditCard, Check, Clock, AlertTriangle, DollarSign, Plus, X } from 'lucide-react';
 import Link from 'next/link';
 import { useNotification } from '@/lib/NotificationContext';
 import { AdminGuard } from '@/components/mobile/PermissionGuard';
@@ -72,26 +73,24 @@ export default function MobileSubscriptionsPage() {
   return (
     <AdminGuard>
       <div className="w-full min-h-screen pb-28">
-        <div className="px-6 pt-8 pb-4 flex items-center justify-between sticky top-0 bg-slate-50/80 dark:bg-slate-950/80 backdrop-blur-xl z-40">
-          <div className="flex items-center gap-3">
-            <Link href="/mobile" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800 active:scale-95 transition-transform">
-              <ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" />
-            </Link>
-            <h1 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">To'lovlar</h1>
-          </div>
-          <button onClick={() => setShowAdd(true)}
-            className="p-2.5 bg-pink-600 text-white rounded-full shadow-lg shadow-pink-500/30 active:scale-95 transition-transform">
-            <Plus size={20} />
-          </button>
-        </div>
+        <MobileHeader 
+          title="To'lovlar" 
+          backHref="/mobile" 
+          rightAction={
+            <button onClick={() => setShowAdd(true)}
+              className="p-2.5 bg-pink-600 text-white rounded-full shadow-lg shadow-pink-500/30 active:scale-95 transition-transform">
+              <Plus size={20} />
+            </button>
+          } 
+        />
 
         <div className="px-6 mb-4 mt-2 grid grid-cols-2 gap-3">
-          <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 p-4 rounded-2xl text-white">
-            <div className="text-[9px] font-bold text-emerald-100 uppercase tracking-wider mb-1">To'langan</div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-slate-900 dark:text-white">
+            <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">To'langan</div>
             <div className="text-xl font-black">${totalPaid.toLocaleString()}</div>
           </div>
-          <div className="bg-gradient-to-br from-amber-500 to-amber-600 p-4 rounded-2xl text-white">
-            <div className="text-[9px] font-bold text-amber-100 uppercase tracking-wider mb-1">Kutilmoqda</div>
+          <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl text-slate-900 dark:text-white">
+            <div className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Kutilmoqda</div>
             <div className="text-xl font-black">${totalPending.toLocaleString()}</div>
           </div>
         </div>

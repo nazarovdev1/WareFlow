@@ -41,7 +41,7 @@ export default function Sidebar() {
           W
         </div>
         <div>
-          <h1 className="text-white dark:text-slate-200 font-bold tracking-wide text-[15px]">IBOX ERP</h1>
+          <h1 className="text-white dark:text-slate-200 font-bold tracking-wide text-[15px]">WAREFLOW ERP</h1>
           <p className="text-[9px] text-slate-400 dark:text-slate-500 uppercase tracking-widest leading-none mt-1">INVENTORY MANAGEMENT</p>
         </div>
       </div>

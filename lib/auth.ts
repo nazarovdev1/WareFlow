@@ -77,5 +77,5 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || "ibox-fallback-secret-key-12345",
+  secret: process.env.NEXTAUTH_SECRET || "wareflow-fallback-secret-key-12345",
 };

@@ -3,7 +3,7 @@ export type Language = 'uz' | 'ru' | 'en';
 export const translations = {
   uz: {
     common: {
-      appName: 'IBOX',
+      appName: 'WAREFLOW',
       save: 'Saqlash',
       cancel: 'Bekor qilish',
       delete: "O'chirish",
@@ -195,7 +195,7 @@ export const translations = {
   },
   ru: {
     common: {
-      appName: 'IBOX',
+      appName: 'WAREFLOW',
       save: 'Сохранить',
       cancel: 'Отмена',
       delete: 'Удалить',
@@ -387,7 +387,7 @@ export const translations = {
   },
   en: {
     common: {
-      appName: 'IBOX',
+      appName: 'WAREFLOW',
       save: 'Save',
       cancel: 'Cancel',
       delete: 'Delete',

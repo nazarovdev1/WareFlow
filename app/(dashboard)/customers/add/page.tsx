@@ -85,7 +85,7 @@ export default function AddCustomerPage() {
               </label>
               <input
                 type="text"
-                placeholder={'Masalan: IBOX Systems'}
+                placeholder={'Masalan: WAREFLOW Systems'}
                 value={formData.companyName}
                 onChange={e => setFormData({...formData, companyName: e.target.value})}
                 className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-xl text-sm focus:bg-white dark:focus:bg-slate-600 focus:border-teal-500 outline-none transition-all font-medium text-slate-800 dark:text-slate-200"

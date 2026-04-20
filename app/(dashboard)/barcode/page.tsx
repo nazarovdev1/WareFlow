@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AlertCircle, Plus, Printer, X, CheckSquare, Square, Trash2 } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
+import { useReactToPrint } from 'react-to-print';
 
 export default function BarcodePage() {
   const { t } = useLanguage();
@@ -11,6 +12,7 @@ export default function BarcodePage() {
   const [selectedItems, setSelectedItems] = useState<any[]>([
     { id: 1, productId: '', barcode: '', quantity: 1, name: '' }
   ]);
+  const printRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/products?limit=1000')
@@ -48,6 +50,43 @@ export default function BarcodePage() {
     if (selectedItems.length === 1) return;
     setSelectedItems(selectedItems.filter((_, i) => i !== index));
   };
+
+  // Generate barcode visual bars
+  const generateBarcodeBars = (barcode: string) => {
+    if (!barcode) return [];
+    const bars: { width: string }[] = [];
+    for (let i = 0; i < barcode.length; i++) {
+      const num = parseInt(barcode[i]) || 0;
+      const width = (num + 1) * 2 + 'px';
+      bars.push({ width });
+    }
+    return bars;
+  };
+
+  // Print handler
+  const handlePrint = useReactToPrint({
+    content: () => printRef.current,
+    documentTitle: 'Barcode Labels - WAREFLOW',
+    onAfterPrint: () => console.log('Print completed'),
+  });
+
+  // Generate all labels for printing
+  const generatePrintLabels = () => {
+    const labels: any[] = [];
+    selectedItems.forEach(item => {
+      const product = products.find(p => p.id === item.productId);
+      for (let i = 0; i < item.quantity; i++) {
+        labels.push({
+          name: item.name || product?.name || 'Product Name',
+          barcode: item.barcode || product?.barcode || '000000000000',
+          price: product?.sellPrice?.toLocaleString() || '0'
+        });
+      }
+    });
+    return labels;
+  };
+
+  const printLabels = generatePrintLabels();
 
   return (
     <div className="p-8 font-sans max-w-7xl mx-auto text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-900">
@@ -222,7 +261,10 @@ export default function BarcodePage() {
         <button className="px-8 py-3 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-200 font-bold rounded-xl transition">
           {t('common', 'cancel')}
         </button>
-        <button className="px-8 py-3 bg-[#111827] dark:bg-slate-700 hover:bg-[#1f2937] dark:hover:bg-slate-600 text-white font-bold rounded-xl flex items-center shadow-lg shadow-black/20 transition">
+        <button
+          onClick={handlePrint}
+          className="px-8 py-3 bg-[#111827] dark:bg-slate-700 hover:bg-[#1f2937] dark:hover:bg-slate-600 text-white font-bold rounded-xl flex items-center shadow-lg shadow-black/20 transition"
+        >
           <Printer size={18} className="mr-2" /> {t('products', 'barcodePrint')}
         </button>
       </div>
@@ -233,14 +275,37 @@ export default function BarcodePage() {
             <span className="text-xs font-bold">i</span>
            </div>
            <div className="flex-1">
-             <h4 className="font-bold text-sm text-white mb-0.5">Tizim tayyor</h4>
-             <p className="text-xs text-slate-400 dark:text-slate-500">Barcode printeri ulanishi muvaffaqiyatli yakunlandi.</p>
+             <h4 className="font-bold text-sm text-white mb-0.5">Print tayyor</h4>
+             <p className="text-xs text-slate-400 dark:text-slate-500">Print tugmasini bosing va printerga yuboring.</p>
            </div>
            <button onClick={() => setShowNotification(false)} className="text-slate-500 dark:text-slate-400 hover:text-white transition">
              <X size={16} />
            </button>
         </div>
       )}
+
+      {/* Hidden print template */}
+      <div className="no-print" style={{ display: 'none' }}>
+        <div ref={printRef} className="print-container">
+          <div className="barcode-labels-grid">
+            {printLabels.map((label, index) => (
+              <div key={index} className="barcode-label">
+                <div className="barcode-name">{label.name}</div>
+                <div className="barcode-visual">
+                  {generateBarcodeBars(label.barcode).map((bar, i) => (
+                    <div key={i} className="bar" style={{ width: bar.width }} />
+                  ))}
+                </div>
+                <div className="barcode-number">{label.barcode}</div>
+                <div className="barcode-price">
+                  <div className="barcode-price-value">{label.price} UZS</div>
+                  <div className="barcode-qr">QR</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

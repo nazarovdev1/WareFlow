@@ -1,5 +1,6 @@
 'use client';
 
+import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { ChevronLeft, Mail, Phone, Building2, Shield, Save, ToggleLeft, ToggleRight, Check, X } from 'lucide-react';
 import Link from 'next/link';
@@ -88,11 +89,7 @@ export default function MobileUserDetailPage() {
     return (
       <AdminGuard>
         <div className="w-full min-h-screen pb-28">
-          <div className="px-6 pt-8 pb-4 flex items-center gap-3">
-            <Link href="/mobile/users" className="p-2 bg-white dark:bg-slate-900 rounded-full shadow-sm border border-slate-200/60 dark:border-slate-800">
-              <ChevronLeft size={20} className="text-slate-600 dark:text-slate-300" />
-            </Link>
-          </div>
+          <MobileHeader title="Yuklanmoqda..." backHref="/mobile/users" />
           <div className="px-6 space-y-4">{Array(4).fill(0).map((_, i) => <div key={i} className="h-20 bg-white dark:bg-slate-900 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800" />)}</div>
         </div>
       </AdminGuard>

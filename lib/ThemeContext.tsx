@@ -17,7 +17,7 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 function getInitialTheme(): Theme {
   // Check localStorage first
   if (typeof window !== 'undefined') {
-    const savedTheme = localStorage.getItem('ibox_theme') as Theme;
+    const savedTheme = localStorage.getItem('wareflow_theme') as Theme;
     if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
       return savedTheme;
     }
@@ -42,7 +42,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const setTheme = (newTheme: Theme) => {
     setThemeState(newTheme);
-    localStorage.setItem('ibox_theme', newTheme);
+    localStorage.setItem('wareflow_theme', newTheme);
     document.documentElement.classList.toggle('dark', newTheme === 'dark');
   };
 
