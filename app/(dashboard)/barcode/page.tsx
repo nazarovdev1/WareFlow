@@ -65,7 +65,7 @@ export default function BarcodePage() {
 
   // Print handler
   const handlePrint = useReactToPrint({
-    content: () => printRef.current,
+    contentRef: printRef,
     documentTitle: 'Barcode Labels - WAREFLOW',
     onAfterPrint: () => console.log('Print completed'),
   });
