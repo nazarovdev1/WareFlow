@@ -1,43 +1,52 @@
+<!-- Banner -->
 <p align="center">
-  <img src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=600&size=28&duration=3000&pause=1000&color=2DD4BF&center=true&vCenter=true&width=600&lines=WareFlow+%E2%80%94+Warehouse+ERP" alt="Typing SVG" />
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0f172a,50:0d9488,100:0f172a&height=250&section=header&text=WareFlow%20ERP&fontSize=70&fontColor=ffffff&animation=fadeIn&fontAlignY=35&desc=Professional%20Warehouse%20%26%20Inventory%20Management&descAlignY=55&descSize=18" alt="WareFlow Banner" />
+</p>
+
+<!-- Typing Animation -->
+<p align="center">
+  <img src="https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=24&duration=3000&pause=800&color=2DD4BF&center=true&vCenter=true&width=650&lines=Next.js+14+%7C+TypeScript+%7C+PostgreSQL;Multi-Warehouse+ERP+System;Thermal+Printer+Support;AI+Demand+Forecasting;Telegram+Bot+Integration" alt="Typing Animation" />
+</p>
+
+<!-- Badges -->
+<p align="center">
+  <a href="https://github.com/nazarovdev1/WareFlow/stargazers"><img src="https://img.shields.io/github/stars/nazarovdev1/WareFlow?style=for-the-badge&logo=github&color=fbbf24" alt="Stars" /></a>
+  <a href="https://github.com/nazarovdev1/WareFlow/network/members"><img src="https://img.shields.io/github/forks/nazarovdev1/WareFlow?style=for-the-badge&logo=github&color=38bdf8" alt="Forks" /></a>
+  <a href="https://github.com/nazarovdev1/WareFlow/issues"><img src="https://img.shields.io/github/issues/nazarovdev1/WareFlow?style=for-the-badge&logo=github&color=f87171" alt="Issues" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/nazarovdev1/WareFlow?style=for-the-badge&logo=opensourceinitiative&color=a3e635" alt="License" /></a>
 </p>
 
 <p align="center">
-  <strong>🏭 Online Warehouse & Inventory ERP System</strong><br/>
-  <em>Distribution bizneslari uchun to'liq ombor boshqaruv tizimi</em>
+  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js_14-black?style=flat-square&logo=next.js&logoColor=white" alt="Next.js" /></a>
+  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript_5.3-3178C6?style=flat-square&logo=typescript&logoColor=white" alt="TypeScript" /></a>
+  <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma_7.7-2D3748?style=flat-square&logo=prisma&logoColor=white" alt="Prisma" /></a>
+  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind_3.4-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="Tailwind" /></a>
+  <a href="https://redux-toolkit.js.org/"><img src="https://img.shields.io/badge/Redux_Toolkit-764ABC?style=flat-square&logo=redux&logoColor=white" alt="Redux" /></a>
+  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL_16-336791?style=flat-square&logo=postgresql&logoColor=white" alt="PostgreSQL" /></a>
 </p>
 
-<p align="center">
-  <a href="https://nextjs.org/"><img src="https://img.shields.io/badge/Next.js-14.1-black?logo=next.js&logoColor=white" alt="Next.js" /></a>
-  <a href="https://www.typescriptlang.org/"><img src="https://img.shields.io/badge/TypeScript-5.3-blue?logo=typescript&logoColor=white" alt="TypeScript" /></a>
-  <a href="https://www.prisma.io/"><img src="https://img.shields.io/badge/Prisma-7.7-2D3748?logo=prisma&logoColor=white" alt="Prisma" /></a>
-  <a href="https://tailwindcss.com/"><img src="https://img.shields.io/badge/Tailwind-3.4-38B2AC?logo=tailwind-css&logoColor=white" alt="Tailwind" /></a>
-  <a href="https://redux-toolkit.js.org/"><img src="https://img.shields.io/badge/Redux-Toolkit-764ABC?logo=redux&logoColor=white" alt="Redux" /></a>
-  <a href="https://www.postgresql.org/"><img src="https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql&logoColor=white" alt="PostgreSQL" /></a>
-  <br/>
-  <a href="#-features"><strong>Features</strong></a> ·
-  <a href="#-tech-stack"><strong>Tech Stack</strong></a> ·
-  <a href="#-quick-start"><strong>Quick Start</strong></a> ·
-  <a href="#-architecture"><strong>Architecture</strong></a> ·
-  <a href="#-api-reference"><strong>API</strong></a> ·
-  <a href="#-roadmap"><strong>Roadmap</strong></a>
-</p>
-
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## 🎯 Overview
 
 **WareFlow** — bu distribyutor kompaniyalar uchun mo'ljallangan **to'liq funksional ombor boshqaruv ERP tizimi**. Mahsulot kataloglari, ko'p omborli zaxira boshqaruvi, omborlararo transferlar, inventarizatsiya auditi, narxlar boshqaruvi va mijoz/ta'minotchi moliyaviy hisoblarini bitta platformada yuritish imkonini beradi.
 
+<div align="center">
+
 | | |
 |---|---|
-| 🌐 **Til** | O'zbek / Русский / English (multi-language) |
+| 🌐 **Tillar** | O'zbek / Русский / English (multi-language i18n) |
 | 💱 **Valyuta** | USD + UZS (ikki valyutali balans) |
 | 🏢 **Omborlar** | Cheksiz miqdorda ombor qo'llab-quvvatlanadi |
 | 🔐 **Auth** | NextAuth v4 + JWT + Role-based access (ADMIN / MANAGER / STAFF) |
-| 📊 **Modellar** | 18 ta Prisma modeli, 5 ta domain |
+| 📊 **Modellar** | 35+ ta Prisma modeli, 10+ enum, 8 ta domain |
+| 🖨️ **Printer** | A4 / A5 / Termal 80mm / Termal 58mm |
 
----
+</div>
+
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## ✨ Features
 
@@ -49,6 +58,7 @@
 - ✅ Ko'p darajali narxlar (chakana ← ulgurji ← minimal)
 - ✅ Mahsulot rasmlari qo'llab-quvvatlanadi
 - ✅ Har bir ombor bo'yicha zaxira darajasi
+- ✅ Mahsulot variantlari (rang, o'lcham) va partiyalar (FIFO/FEFO)
 </details>
 
 <details>
@@ -57,6 +67,7 @@
 - ✅ Cheksiz miqdordagi omborlar (manzil tracking bilan)
 - ✅ Har bir ombor uchun alohida zaxira yozuvlari (miqdor + tannarx)
 - ✅ Zaxira band qilish (reservation) tizimi
+- ✅ Ombor orali threshold ogohlantirishlar
 </details>
 
 <details>
@@ -93,7 +104,8 @@
 - ✅ Mijozlar guruhlari (standart chegirma bilan)
 - ✅ Hudud bo'yicha segmentatsiya
 - ✅ Aktiv / Nofaol status tracking
-- ✅ Qarzдор mijozlar ro'yxati
+- ✅ Qarzdor mijozlar ro'yxati
+- ✅ Sodiqlik dasturi (Bronze → Silver → Gold → Platinum)
 </details>
 
 <details>
@@ -106,46 +118,61 @@
 </details>
 
 <details>
+<summary><strong>🖨️ Chop etish & Shablonlar</strong></summary>
+
+- ✅ 5 ta hujjat turi: Hisob-faktura, Chek, Yo'l xati, Dalolatnoma, Maxsus
+- ✅ 4 ta qog'oz o'lchami: A4, A5, Termal 80mm, Termal 58mm
+- ✅ Vizual shablon muharriri (HTML + Live Preview)
+- ✅ Thermal printer uchun monospace optimallashtirilgan CSS
+- ✅ `@media print` bilan to'g'ri chop etish
+</details>
+
+<details>
 <summary><strong>📊 Dashboard & Analytics</strong></summary>
 
 - ✅ Asosiy KPI kartochkalar (transferlar, omborlar, mijoz qarzi, ta'minotchi qarzi)
 - ✅ Ikki valyutali moliyaviy xulosa
 - ✅ Mahsulot va ombor statistikasi
+- ✅ AI talab bashorati (Demand Forecast)
 </details>
 
 <details>
-<summary><strong>🔐 Autentifikatsiya</strong></summary>
+<summary><strong>🤖 Integratsiyalar</strong></summary>
 
-- ✅ NextAuth v4 + Credentials Provider
-- ✅ JWT session boshqaruvi
-- ✅ Rolga asoslangan kirish (ADMIN / MANAGER / STAFF)
-- ✅ Middleware orqali himoyalangan route'lar
-- ✅ Chiroyli login sahifa (responsive dizayn)
+- ✅ Telegram bot (buyurtma, zaxira ogohlantirish, kunlik hisobot)
+- ✅ 1C Buxgalteriya sinxronizatsiyasi
+- ✅ Webhook & API kalitlari
+- ✅ Barcode skaner (ZXing)
 </details>
 
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## 🛠 Tech Stack
 
 ```
-┌─────────────────────────────────────────────────────┐
-│                    FRONTEND                         │
-│  Next.js 14 (App Router)  •  React 18  •  TS 5     │
-│  Tailwind CSS 3           •  Lucide Icons           │
-│  Redux Toolkit            •  React Redux            │
-├─────────────────────────────────────────────────────┤
-│                   AUTH LAYER                        │
-│  NextAuth v4  •  JWT  •  bcryptjs  •  Middleware   │
-├─────────────────────────────────────────────────────┤
-│                 DATABASE LAYER                      │
-│  Prisma 7.7  •  @prisma/adapter-pg  •  PostgreSQL   │
-│  Connection Pooling  •  Global Client Singleton     │
-└─────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                         FRONTEND                                │
+│  Next.js 14 (App Router)  •  React 18  •  TypeScript 5.3      │
+│  Tailwind CSS 3.4         •  Lucide Icons  •  Recharts         │
+│  Redux Toolkit            •  React Redux  •  React-to-Print    │
+├─────────────────────────────────────────────────────────────────┤
+│                         AUTH LAYER                              │
+│  NextAuth v4  •  JWT  •  bcryptjs  •  Middleware Protection    │
+├─────────────────────────────────────────────────────────────────┤
+│                       DATABASE LAYER                            │
+│  Prisma 7.7  •  @prisma/adapter-pg  •  PostgreSQL 16           │
+│  Connection Pooling  •  Global Client Singleton                 │
+├─────────────────────────────────────────────────────────────────┤
+│                      INTEGRATIONS                               │
+│  Leaflet (Maps)  •  ZXing (Barcode)  •  XLSX (Export)          │
+│  Telegram Bot API  •  Recharts (Charts)                        │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 | Layer | Texnologiya | Versiya |
 |---|---|---|
-| **Framework** | [Next.js](https://nextjs.org/) (App Router) | `14.1` |
+| **Framework** | [Next.js](https://nextjs.org/) (App Router) | `14.2` |
 | **Language** | [TypeScript](https://www.typescriptlang.org/) | `5.3` |
 | **Styling** | [Tailwind CSS](https://tailwindcss.com/) + Custom utilities | `3.4` |
 | **State** | [Redux Toolkit](https://redux-toolkit.js.org/) + React Redux | `2.2` |
@@ -156,7 +183,8 @@
 | **Icons** | [Lucide React](https://lucide.dev/) | `0.358` |
 | **Runtime** | Node.js | `18+` |
 
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## 🚀 Quick Start
 
@@ -198,7 +226,8 @@ npm run dev
 >
 > 🔑 **Default Admin:** `admin@wareflow.uz` / `admin`
 
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## 🏗 Architecture
 
@@ -213,64 +242,31 @@ WareFlow/
 │   │   ├── inventory/                #    → Mahsulotlar ro'yxati
 │   │   ├── barcode/                  #    → Shtrix-kod chop etish
 │   │   ├── prices/                   #    → Narxlar ro'yxati
-│   │   │   ├── page.tsx
-│   │   │   └── add/page.tsx
 │   │   ├── warehouse/                #    → Ombor boshqaruvi
-│   │   │   ├── page.tsx              #       → Transferlar
-│   │   │   ├── stock/page.tsx        #       → Zaxira
-│   │   │   ├── inventory/page.tsx    #       → Inventarizatsiya
-│   │   │   └── add/page.tsx          #       → Ombor qo'shish
 │   │   ├── customers/                #    → Mijozlar
-│   │   │   ├── page.tsx              #       → Ro'yxat
-│   │   │   ├── add/page.tsx          #       → Qo'shish
-│   │   │   ├── groups/page.tsx       #       → Guruhlar
-│   │   │   ├── groups/[id]/page.tsx  #       → Guruh tafsilotlari
-│   │   │   └── debtors/page.tsx      #       → Qarzдорlar
-│   │   └── suppliers/                #    → Ta'minotchilar
-│   │       ├── page.tsx
-│   │       ├── add/page.tsx
-│   │       └── creditors/page.tsx    #       → Kreditdorlar
-│   │
-│   ├── api/                          # 🔌 REST API Routes
-│   │   ├── auth/[...nextauth]/       #    → NextAuth handler
-│   │   ├── products/                 #    → Mahsulotlar CRUD
-│   │   ├── warehouses/               #    → Omborlar CRUD
-│   │   ├── transfers/                #    → Transferlar
-│   │   ├── stock/                    #    → Zaxira yozuvlari
-│   │   ├── price-lists/              #    → Narxlar ro'yxati
-│   │   ├── inventory-audit/          #    → Inventarizatsiya
-│   │   ├── customers/                #    → Mijozlar
-│   │   ├── customer-groups/          #    → Mijoz guruhlari
 │   │   ├── suppliers/                #    → Ta'minotchilar
-│   │   ├── dashboard/stats/          #    → Dashboard statistika
-│   │   └── setup-admin/              #    → Admin yaratish endpoint
+│   │   ├── sales/                    #    → Savdolar
+│   │   ├── purchases/                #    → Xaridlar
+│   │   ├── deliveries/               #    → Yetkazib berish
+│   │   ├── cashbox/                  #    → Kassa
+│   │   ├── contracts/                #    → Shartnomalar
+│   │   ├── print-templates/          #    → Chop etish shablonlari
+│   │   ├── loyalty/                  #    → Sodiqlik dasturi
+│   │   ├── ai-forecast/              #    → AI bashorat
+│   │   ├── telegram/                 #    → Telegram bot
+│   │   ├── 1c-sync/                  #    → 1C integratsiya
+│   │   └── settings/                 #    → Sozlamalar
 │   │
+│   ├── api/                          # 🔌 REST API Routes (~40 ta endpoint)
 │   ├── login/                        # 🔐 Login sahifa
-│   │   └── page.tsx
-│   ├── layout.tsx                    # Root layout
-│   └── providers.tsx                 # Redux + Auth providers
+│   ├── mobile/                       # 📱 Mobil versiya
+│   └── layout.tsx                    # Root layout
 │
 ├── components/                       # 🧩 UI Components
-│   ├── providers/
-│   │   └── AuthProvider.tsx          #    → NextAuth session provider
-│   └── ...                           #    → Reusable components
-│
-├── lib/                              # 📚 Utilities
-│   ├── db.ts                         #    → Prisma client (pooled singleton)
-│   ├── auth.ts                       #    → NextAuth config
-│   ├── features/                     #    → Redux Toolkit slices
-│   └── ...
-│
-├── prisma/
-│   ├── schema.prisma                 # 🗄  Database schema (18 models)
-│   └── seed.ts                       # 🌱  Admin user seeder
-│
-├── middleware.ts                     # 🛡  Auth middleware (route protection)
-├── .env                              # 🔑  Environment variables
-├── next.config.js                    # ⚙️  Next.js config
-├── tailwind.config.ts                # 🎨  Tailwind config
-├── tsconfig.json                     # 📘  TypeScript config
-└── package.json                      # 📦  Dependencies
+├── lib/                              # 📚 Utilities, Redux, i18n, auth
+├── prisma/                           # 🗄 Database schema (35+ models)
+├── public/                           # 🌍 Static assets, PWA
+└── types/                            # 📘 TypeScript declarations
 ```
 
 ### 🗄 Database Schema
@@ -279,120 +275,44 @@ WareFlow/
 ┌──────────────────────────────────────────────────────────────┐
 │                     DATABASE DOMAINS                         │
 ├──────────────┬───────────────────────────────────────────────┤
-│  📦 Products │  Category, Folder, Unit, Product              │
-│  🏢 Warehouse│  Warehouse, StockEntry                        │
+│  📦 Products │  Category, Folder, Unit, Product, Variant     │
+│  🏢 Warehouse│  Warehouse, StockEntry, StockThreshold        │
 │  🚚 Transfer │  Transfer, TransferItem                       │
 │  📋 Audit    │  InventoryAudit, InventoryAuditItem           │
 │  💰 Pricing  │  PriceList, PriceListItem                     │
-│  👥 Customers│  CustomerGroup, Customer, CustomerTransaction  │
+│  👥 Customers│  CustomerGroup, Customer, Transaction, Loyalty│
 │  🏭 Suppliers│  Supplier, SupplierTransaction                │
-│  🔐 Auth     │  User (ADMIN / MANAGER / STAFF)               │
+│  🛒 Sales    │  Order, OrderItem, Commission                 │
+│  📥 Purchase │  Purchase, PurchaseItem, ProductBatch         │
+│  💵 Cashbox  │  Cashbox, CashTransaction, Expense            │
+│  🚚 Delivery │  Delivery, DeliveryRoute, RouteStop           │
+│  🤖 AI       │  DemandForecast                               │
+│  📢 Notif.   │  AdminNotification, UserNotification          │
+│  📊 Logs     │  ActivityLog                                  │
+│  🔗 API      │  ApiKey, Webhook                              │
+│  🤖 Telegram │  TelegramBotConfig, TelegramChat              │
+│  💱 Finance  │  ExchangeRate, Subscription, Contract         │
+│  🔐 Auth     │  User, UserSettings, UserRequest              │
+│  📑 Print    │  PrintTemplate                                │
+│  🔗 1C       │  OneCConfig, OneCSyncLog                      │
 └──────────────┴───────────────────────────────────────────────┘
 ```
 
-**Jami:** 18 model • 5 enum • 30+ relation • Cascade delete support
+**Jami:** 35+ model • 10+ enum • 50+ relation • Cascade delete support
 
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
-## 🔌 API Reference
+## 📸 Screenshots
 
-### 🔐 Authentication
+<p align="center">
+  <img src="mobiledesign/Screenshot%20From%202026-04-19%2017-52-22.png" width="30%" alt="Dashboard" />
+  <img src="mobiledesign/Screenshot%20From%202026-04-19%2017-52-41.png" width="30%" alt="Inventory" />
+  <img src="mobiledesign/Screenshot%20From%202026-04-19%2017-52-50.png" width="30%" alt="Sales" />
+</p>
 
-| Method | Endpoint | Body | Description |
-|---|---|---|---|
-| `POST` | `/api/auth/signin` | `{ email, password }` | Login |
-| `POST` | `/api/auth/signout` | — | Logout |
-| `GET` | `/api/auth/session` | — | Get current session |
-
-### 📦 Products
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/products` | Ro'yxat (qidiruv, filter, paginatsiya) |
-| `POST` | `/api/products` | Yangi mahsulot yaratish |
-| `DELETE` | `/api/products/[id]` | Mahsulotni o'chirish |
-
-### 🏢 Warehouses
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/warehouses` | Omborlar ro'yxati |
-| `POST` | `/api/warehouses` | Yangi ombor yaratish |
-
-### 🚚 Transfers
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/transfers` | Transferlar ro'yxati (filter bilan) |
-| `POST` | `/api/transfers` | Yangi transfer yaratish |
-| `GET` | `/api/transfers/[id]` | Transfer tafsilotlari |
-| `PATCH` | `/api/transfers/[id]` | Transfer yangilash |
-| `DELETE` | `/api/transfers/[id]` | Transfer o'chirish |
-
-### 📋 Inventory Audits
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/inventory-audit` | Auditlar ro'yxati |
-| `POST` | `/api/inventory-audit` | Yangi audit yaratish |
-| `DELETE` | `/api/inventory-audit/[id]` | Audit o'chirish |
-
-### 💰 Price Lists
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/price-lists` | Narxlar ro'yxati |
-| `POST` | `/api/price-lists` | Yangi narxlar ro'yxati |
-| `DELETE` | `/api/price-lists/[id]` | O'chirish |
-
-### 👥 Customers
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/customers` | Mijozlar ro'yxati (statistika bilan) |
-| `POST` | `/api/customers` | Yangi mijoz yaratish |
-| `DELETE` | `/api/customers/[id]` | Mijoz o'chirish |
-
-### 🏭 Suppliers
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/suppliers` | Ta'minotchilar ro'yxati |
-| `POST` | `/api/suppliers` | Yangi ta'minotchi yaratish |
-| `DELETE` | `/api/suppliers/[id]` | Ta'minotchi o'chirish |
-
-### 📊 Dashboard
-
-| Method | Endpoint | Description |
-|---|---|---|
-| `GET` | `/api/dashboard/stats` | Aggregatsiyalangan statistika |
-
----
-
-## 🔧 Configuration
-
-### Environment Variables
-
-| Variable | Tavsif | Majburiy | Misol |
-|---|---|---|---|
-| `DATABASE_URL` | PostgreSQL ulanish string | ✅ | `postgresql://user:pass@host:5432/db` |
-| `NEXTAUTH_SECRET` | JWT sign uchun secret kalit | ✅ | `openssl rand -base64 32` |
-| `NEXTAUTH_URL` | App base URL | ✅ (prod) | `http://localhost:3000` |
-
-### Available Scripts
-
-| Buyruq | Tavsif |
-|---|---|
-| `npm run dev` | Development server (`http://localhost:3000`) |
-| `npm run build` | Production build |
-| `npm run start` | Production server |
-| `npm run lint` | ESLint tekshiruvi |
-| `npx prisma generate` | Prisma client generatsiya |
-| `npx prisma db push` | Schema'ni database'ga push qilish |
-| `npx prisma studio` | Prisma Studio GUI (database browser) |
-| `npx tsx prisma/seed.ts` | Demo data seed |
-
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## 🗺 Roadmap
 
@@ -402,25 +322,30 @@ WareFlow/
 - [x] Omborlararo transferlar
 - [x] Inventarizatsiya auditi
 - [x] Narxlar ro'yxati
-- [x] Mijozlar boshqaruvi (ikki valyuta)
+- [x] Mijozlar boshqaruvi (ikki valyuta + sodiqlik)
 - [x] Ta'minotchilar boshqaruvi
+- [x] Savdo & Xaridlar modullari
+- [x] Kassa boshqaruvi
+- [x] Yetkazib berish marshrutlash (Leaflet)
 - [x] Dashboard statistika
+- [x] Chop etish shablonlari (A4/A5/80mm/58mm)
 - [x] Autentifikatsiya (NextAuth + JWT + RBAC)
-- [x] Login sahifa + Middleware protection
+- [x] Mobil responsive versiya
+- [x] Telegram bot integratsiyasi
+- [x] 1C integratsiya
+- [x] AI talab bashorati
 
 ### 🚧 Rejalashtirilgan
-- [ ] Sotuvlar moduli (SOTUVLAR) — order, invoice, receipt
-- [ ] Xaridlar moduli (XARIDLAR) — purchase orders
-- [ ] Moliyaviy hisobotlar & analitika
-- [ ] Shtrix-kod skanner integratsiya
-- [ ] Excel/PDF eksport
-- [ ] Real-time zaxira ogohlantirishlar
-- [ ] Ko'p til qo'llab-quvvatlash (UZ / RU / EN)
-- [ ] Mobil responsive yaxshilash
+- [ ] Real-time zaxira ogohlantirishlar (WebSocket)
+- [ ] Ko'p tilli qo'llab-quvvatlash (UZ / RU / EN)
+- [ ] Advanced hisobotlar builder
 - [ ] Docker containerizatsiya
-- [ ] CI/CD pipeline
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Mobile App (React Native / Expo)
+- [ ] Voice search & commands
 
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## 🤝 Contributing
 
@@ -440,28 +365,36 @@ git push origin feature/yangi-funksiya
 # 5. Pull Request oching
 ```
 
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## 📄 License
 
+<p align="center">
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-success.svg?style=for-the-badge&logo=opensourceinitiative" alt="MIT License" />
+  </a>
+</p>
+
 MIT License — erkin foydalanish, o'zgartirish va tarqatish mumkin.
 
----
+<!-- Animated Line -->
+<img src="https://user-images.githubusercontent.com/73097560/115834477-dbab4500-a447-11eb-908a-139a6edaec5c.gif" width="100%">
 
 ## 👨‍💻 Author
 
-<div align="center">
-
-| | |
-|---|---|
-| **nazarovdev1** | [GitHub Profile](https://github.com/nazarovdev1) |
-| | [WareFlow Repository](https://github.com/nazarovdev1/WareFlow) |
-
-</div>
-
----
+<p align="center">
+  <a href="https://github.com/nazarovdev1">
+    <img src="https://img.shields.io/badge/GitHub-nazarovdev1-181717?style=for-the-badge&logo=github" alt="GitHub" />
+  </a>
+</p>
 
 <p align="center">
   <em>🏭 WareFlow — Ombor boshqaruvi samarali, tez va ishonchli.</em><br/>
   <sub>Made with ❤️ and ☕ in Uzbekistan</sub>
+</p>
+
+<!-- Footer Wave -->
+<p align="center">
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:0d9488,50:0f172a,100:0d9488&height=120&section=footer" alt="Footer Wave" />
 </p>
