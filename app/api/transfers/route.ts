@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { WAREHOUSE_PERMISSIONS } from '@/lib/permissions';
 
 const TransferSchema = z.object({
   docNumber: z.string().optional(),
@@ -18,6 +21,20 @@ const TransferSchema = z.object({
 // GET /api/transfers — List warehouse transfers with filters
 export async function GET(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const user = session?.user as any;
+
+    if (!user) {
+      return NextResponse.json({ error: 'Tizimga kiring' }, { status: 401 });
+    }
+
+    const isAdmin = user.role === 'ADMIN';
+    const hasPermission = isAdmin || user.permissions?.includes(WAREHOUSE_PERMISSIONS[0]);
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const fromWarehouseId = searchParams.get('fromWarehouseId');
@@ -68,14 +85,28 @@ export async function GET(req: NextRequest) {
 // POST /api/transfers — Create a new transfer with items
 export async function POST(req: NextRequest) {
   try {
+    const session = await getServerSession(authOptions);
+    const user = session?.user as any;
+
+    if (!user) {
+      return NextResponse.json({ error: 'Tizimga kiring' }, { status: 401 });
+    }
+
+    const isAdmin = user.role === 'ADMIN';
+    const hasPermission = isAdmin || user.permissions?.includes(WAREHOUSE_PERMISSIONS[1]);
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
+    }
+
     const body = await req.json();
 
     // Validate with Zod
     const result = TransferSchema.safeParse(body);
     if (!result.success) {
-      return NextResponse.json({ 
-        error: 'Validatsiya xatosi', 
-        details: result.error.issues.map(e => e.message) 
+      return NextResponse.json({
+        error: 'Validatsiya xatosi',
+        details: result.error.issues.map(e => e.message)
       }, { status: 400 });
     }
 

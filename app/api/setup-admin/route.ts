@@ -21,23 +21,23 @@ export async function POST(req: NextRequest) {
 
 export async function GET() {
   try {
-    const adminEmail = 'admin@wareflow.uz';
+    const adminPhone = '+998990901818';
     const adminPassword = 'admin';
 
-    const existing = await prisma.user.findUnique({ where: { email: adminEmail } });
+    const existing = await prisma.user.findUnique({ where: { phone: adminPhone } });
     if (existing) return NextResponse.json({ message: 'Admin already exists' });
 
     const hashedPassword = await bcrypt.hash(adminPassword, 10);
     const user = await prisma.user.create({
       data: {
-        email: adminEmail,
+        phone: adminPhone,
         name: 'Admin',
         password: hashedPassword,
         role: 'ADMIN',
       },
     });
 
-    return NextResponse.json({ message: 'Admin created successfully', user: { email: user.email } });
+    return NextResponse.json({ message: 'Admin created successfully', user: { phone: user.phone } });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }

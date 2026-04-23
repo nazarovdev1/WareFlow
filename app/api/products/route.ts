@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { checkPermission } from '@/lib/checkPermission';
 
 const ProductSchema = z.object({
   name: z.string().min(1, "Mahsulot nomi majburiy"),
@@ -25,6 +26,9 @@ const ProductSchema = z.object({
 // GET /api/products — List products with search, category filter, pagination
 export async function GET(req: NextRequest) {
   try {
+    const { error } = await checkPermission('view_products');
+    if (error) return error;
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const categoryId = searchParams.get('categoryId');
@@ -80,6 +84,9 @@ export async function GET(req: NextRequest) {
 // POST /api/products — Create a new product (with optional initial stock)
 export async function POST(req: NextRequest) {
   try {
+    const { error } = await checkPermission('create_products');
+    if (error) return error;
+
     const body = await req.json();
     
     // Validate with Zod

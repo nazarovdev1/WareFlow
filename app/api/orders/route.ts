@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { checkPermission } from '@/lib/checkPermission';
 
 const OrderSchema = z.object({
   customerId: z.string().optional(),
@@ -12,12 +13,16 @@ const OrderSchema = z.object({
     productId: z.string(),
     quantity: z.number().positive(),
     price: z.number().positive(),
+    batchId: z.string().optional(),
   })).min(1, 'Kamida bitta mahsulot bo\'lishi kerak'),
 });
 
 // GET /api/orders — List all orders
 export async function GET(request: Request) {
   try {
+    const { error } = await checkPermission('view_sales');
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -47,6 +52,8 @@ export async function GET(request: Request) {
           items: {
             include: {
               product: { select: { name: true, sku: true } },
+              batch: { select: { id: true, batchNumber: true, expiryDate: true } },
+              batch: { select: { id: true, batchNumber: true, expiryDate: true } },
             },
           },
         },
@@ -75,6 +82,9 @@ export async function GET(request: Request) {
 // POST /api/orders — Create new order
 export async function POST(request: Request) {
   try {
+    const { error } = await checkPermission('create_sales');
+    if (error) return error;
+
     const body = await request.json();
     const result = OrderSchema.safeParse(body);
 
@@ -118,6 +128,7 @@ export async function POST(request: Request) {
               quantity: item.quantity,
               price: item.price,
               total: item.quantity * item.price,
+              batchId: item.batchId,
             })),
           },
         },
@@ -127,13 +138,78 @@ export async function POST(request: Request) {
           items: {
             include: {
               product: { select: { name: true, sku: true } },
+              batch: { select: { id: true, batchNumber: true, expiryDate: true } },
+              batch: { select: { id: true, batchNumber: true, expiryDate: true } },
             },
           },
         },
       });
 
-      // Update stock (decrease)
+      // Update stock and batch quantities (decrease)
       for (const item of items) {
+        // If batchId is specified, use that specific batch
+        if (item.batchId) {
+          // Update batch quantity
+          const batch = await tx.productBatch.findUnique({
+            where: { id: item.batchId },
+          });
+
+          if (!batch) {
+            throw new Error(`Batch ${item.batchId} topilmadi`);
+          }
+
+          if (batch.quantity < item.quantity) {
+            throw new Error(`Batch ${batch.batchNumber} da yetarli miqdor yo'q`);
+          }
+
+          await tx.productBatch.update({
+            where: { id: item.batchId },
+            data: {
+              quantity: { decrement: item.quantity },
+            },
+          });
+        } else {
+          // FIFO: Find earliest batch with expiry date, or earliest created
+          let remainingQty = item.quantity;
+          let usedBatches: string[] = [];
+
+          while (remainingQty > 0) {
+            const batch = await tx.productBatch.findFirst({
+              where: {
+                productId: item.productId,
+                warehouseId,
+                isActive: true,
+                quantity: { gt: 0 },
+                id: { notIn: usedBatches },
+                OR: [
+                  { expiryDate: { not: null } },
+                  { expiryDate: null },
+                ],
+              },
+              orderBy: [
+                { expiryDate: 'asc' }, // FEFO: First expiring first
+                { createdAt: 'asc' }, // FIFO: First created first
+              ],
+            });
+
+            if (!batch) {
+              throw new Error(`Mahsulot uchun yetarli batch topilmadi: ${item.productId}`);
+            }
+
+            const takeFromBatch = Math.min(remainingQty, batch.quantity);
+            await tx.productBatch.update({
+              where: { id: batch.id },
+              data: {
+                quantity: { decrement: takeFromBatch },
+              },
+            });
+
+            remainingQty -= takeFromBatch;
+            usedBatches.push(batch.id);
+          }
+        }
+
+        // Update stock entry (general stock)
         await tx.stockEntry.updateMany({
           where: {
             productId: item.productId,
@@ -153,6 +229,70 @@ export async function POST(request: Request) {
             balanceUSD: { increment: finalAmount },
           },
         });
+      }
+
+      // Add loyalty points
+      if (customerId) {
+        const customer = await tx.customer.findUnique({
+          where: { id: customerId },
+          include: { loyaltyAccount: true },
+        });
+
+        if (customer?.loyaltyAccount?.isActive) {
+          // Get loyalty program settings
+          const loyaltyProgram = await tx.loyaltyProgram.findFirst({
+            where: { isActive: true },
+          });
+
+          if (loyaltyProgram) {
+            const pointsEarned = Math.floor(finalAmount * loyaltyProgram.pointsPerDollar);
+
+            // Update loyalty account
+            await tx.loyaltyAccount.update({
+              where: { customerId },
+              data: {
+                points: { increment: pointsEarned },
+                totalEarned: { increment: pointsEarned },
+              },
+            });
+
+            // Create loyalty transaction
+            await tx.loyaltyTransaction.create({
+              data: {
+                accountId: customer.loyaltyAccount.id,
+                type: 'EARN',
+                points: pointsEarned,
+                orderId: newOrder.id,
+                description: `Sotuv #${newOrder.docNumber} uchun ball`,
+              },
+            });
+
+            // Check and update tier
+            const updatedAccount = await tx.loyaltyAccount.findUnique({
+              where: { customerId },
+            });
+
+            if (updatedAccount) {
+              let newTier = updatedAccount.tier;
+              if (updatedAccount.totalEarned >= loyaltyProgram.platinumThreshold) {
+                newTier = 'PLATINUM';
+              } else if (updatedAccount.totalEarned >= loyaltyProgram.goldThreshold) {
+                newTier = 'GOLD';
+              } else if (updatedAccount.totalEarned >= loyaltyProgram.silverThreshold) {
+                newTier = 'SILVER';
+              } else if (updatedAccount.totalEarned >= loyaltyProgram.bronzeThreshold) {
+                newTier = 'BRONZE';
+              }
+
+              if (newTier !== updatedAccount.tier) {
+                await tx.loyaltyAccount.update({
+                  where: { customerId },
+                  data: { tier: newTier },
+                });
+              }
+            }
+          }
+        }
       }
 
       return newOrder;

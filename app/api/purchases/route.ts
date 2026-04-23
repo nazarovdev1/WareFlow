@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { checkPermission } from '@/lib/checkPermission';
 
 const PurchaseSchema = z.object({
   supplierId: z.string(),
@@ -16,6 +17,9 @@ const PurchaseSchema = z.object({
 // GET /api/purchases — List all purchases
 export async function GET(request: Request) {
   try {
+    const { error } = await checkPermission('view_purchases');
+    if (error) return error;
+
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
@@ -73,6 +77,9 @@ export async function GET(request: Request) {
 // POST /api/purchases — Create new purchase
 export async function POST(request: Request) {
   try {
+    const { error } = await checkPermission('create_purchases');
+    if (error) return error;
+
     const body = await request.json();
     const result = PurchaseSchema.safeParse(body);
 

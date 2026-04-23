@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { checkPermission } from '@/lib/checkPermission';
 
 // GET /api/customers/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('view_customers');
+    if (error) return error;
+
     const { id } = await params;
     const customer = await prisma.customer.findUnique({
       where: { id },
@@ -24,6 +28,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // PUT /api/customers/[id]
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('edit_customers');
+    if (error) return error;
+
     const { id } = await params;
     const body = await req.json();
     const customer = await prisma.customer.update({
@@ -50,6 +57,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 // DELETE /api/customers/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('delete_customers');
+    if (error) return error;
+
     const { id } = await params;
     // Delete related transactions first to avoid FK constraint errors
     await prisma.customerTransaction.deleteMany({ where: { customerId: id } });

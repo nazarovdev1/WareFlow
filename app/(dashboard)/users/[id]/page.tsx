@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, useParams } from 'next/navigation';
-import { ArrowLeft, Save, Building2, User, Mail, Phone, Lock, Shield, Calendar, DollarSign, Check, X, Package, Send, Search, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { ArrowLeft, Save, Building2, User, Mail, Phone, Lock, Shield, Calendar, DollarSign, Check, X, Package, Send, Search, Trash2, ChevronDown, Eye, Pencil, Trash, Plus, Warehouse, Users, Truck, BarChart3, ShoppingCart, ClipboardList, RotateCcw, Download } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useSession } from 'next-auth/react';
 
@@ -46,15 +46,86 @@ interface SubscriptionForm {
   note: string;
 }
 
-const ALL_PERMISSIONS = [
-  { key: 'manage_products', label: 'Mahsulotlarni boshqarish', desc: 'Tovar qo\'shish, tahrirlash, o\'chirish', icon: '📦' },
-  { key: 'manage_warehouse', label: 'Omborni boshqarish', desc: 'Ombor operatsiyalari va hisobot', icon: '🏭' },
-  { key: 'manage_customers', label: 'Mijozlarni boshqarish', desc: 'Mijozlar ro\'yxati va tranzaktsiyalar', icon: '👥' },
-  { key: 'manage_suppliers', label: 'Yetkazib beruvchilar', desc: 'Yetkazib beruvchilar bilan ishlash', icon: '🚚' },
-  { key: 'view_reports', label: 'Hisobotlarni ko\'rish', desc: 'Statistika va grafiklarga kirish', icon: '📊' },
-  { key: 'manage_sales', label: 'Savdoni boshqarish', desc: 'Savdo yaratish va tahrirlash', icon: '🛒' },
-  { key: 'manage_purchases', label: 'Xaridni boshqarish', desc: 'Kirim yaratish va tahrirlash', icon: '📥' },
+const PERMISSION_GROUPS = [
+  {
+    key: 'warehouse',
+    label: 'Omborni boshqarish',
+    Icon: Warehouse,
+    permissions: [
+      { key: 'view_warehouse', label: 'Ko\'rish', Icon: Eye },
+      { key: 'edit_warehouse', label: 'Tahrirlash', Icon: Pencil },
+      { key: 'delete_warehouse', label: 'O\'chirish', Icon: Trash },
+    ],
+  },
+  {
+    key: 'products',
+    label: 'Mahsulotlarni boshqarish',
+    Icon: Package,
+    permissions: [
+      { key: 'view_products', label: 'Ko\'rish', Icon: Eye },
+      { key: 'create_products', label: 'Yaratish', Icon: Plus },
+      { key: 'edit_products', label: 'Tahrirlash', Icon: Pencil },
+      { key: 'delete_products', label: 'O\'chirish', Icon: Trash },
+    ],
+  },
+  {
+    key: 'customers',
+    label: 'Mijozlarni boshqarish',
+    Icon: Users,
+    permissions: [
+      { key: 'view_customers', label: 'Ko\'rish', Icon: Eye },
+      { key: 'create_customers', label: 'Yaratish', Icon: Plus },
+      { key: 'edit_customers', label: 'Tahrirlash', Icon: Pencil },
+      { key: 'delete_customers', label: 'O\'chirish', Icon: Trash },
+    ],
+  },
+  {
+    key: 'suppliers',
+    label: 'Yetkazib beruvchilar',
+    Icon: Truck,
+    permissions: [
+      { key: 'view_suppliers', label: 'Ko\'rish', Icon: Eye },
+      { key: 'create_suppliers', label: 'Yaratish', Icon: Plus },
+      { key: 'edit_suppliers', label: 'Tahrirlash', Icon: Pencil },
+      { key: 'delete_suppliers', label: 'O\'chirish', Icon: Trash },
+    ],
+  },
+  {
+    key: 'sales',
+    label: 'Savdoni boshqarish',
+    Icon: ShoppingCart,
+    permissions: [
+      { key: 'view_sales', label: 'Ko\'rish', Icon: Eye },
+      { key: 'create_sales', label: 'Yaratish', Icon: Plus },
+      { key: 'edit_sales', label: 'Tahrirlash', Icon: Pencil },
+      { key: 'delete_sales', label: 'O\'chirish', Icon: Trash },
+      { key: 'refund_sales', label: 'Qaytarish', Icon: RotateCcw },
+    ],
+  },
+  {
+    key: 'purchases',
+    label: 'Xaridni boshqarish',
+    Icon: ClipboardList,
+    permissions: [
+      { key: 'view_purchases', label: 'Ko\'rish', Icon: Eye },
+      { key: 'create_purchases', label: 'Yaratish', Icon: Plus },
+      { key: 'edit_purchases', label: 'Tahrirlash', Icon: Pencil },
+      { key: 'delete_purchases', label: 'O\'chirish', Icon: Trash },
+      { key: 'receive_purchases', label: 'Qabul qilish', Icon: Check },
+    ],
+  },
+  {
+    key: 'reports',
+    label: 'Hisobotlarni ko\'rish',
+    Icon: BarChart3,
+    permissions: [
+      { key: 'view_reports', label: 'Ko\'rish', Icon: Eye },
+      { key: 'export_reports', label: 'Eksport', Icon: Download },
+    ],
+  },
 ];
+
+const ALL_PERMISSION_KEYS = PERMISSION_GROUPS.flatMap(g => g.permissions.map(p => p.key));
 
 export default function UserDetailPage() {
   const { t } = useLanguage();
@@ -97,6 +168,7 @@ export default function UserDetailPage() {
   const [sendCart, setSendCart] = useState<{ productId: string; name: string; quantity: number }[]>([]);
   const [sendLoading, setSendLoading] = useState(false);
   const [sendSuccess, setSendSuccess] = useState('');
+  const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 
   useEffect(() => {
     if (userId) {
@@ -394,34 +466,71 @@ export default function UserDetailPage() {
                   <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-3 flex items-center">
                     <Shield size={16} className="mr-2 text-indigo-500" /> Ruxsatlar (Permissions)
                   </h3>
-                  <p className="text-xs text-slate-400 mb-4">Foydalanuvchiga qaysi funksiyalarni ko&apos;rishga ruxsat berasiz.</p>
+                  <p className="text-xs text-slate-400 mb-4">Foydalanuvchiga qaysi funksiyalarni berishni tanlang.</p>
                   <div className="space-y-2">
-                    {ALL_PERMISSIONS.map(perm => {
-                      const isEnabled = form.permissions.includes(perm.key);
+                    {PERMISSION_GROUPS.map(group => {
+                      const isExpanded = expandedGroups.includes(group.key);
+                      const enabledCount = group.permissions.filter(p => form.permissions.includes(p.key)).length;
+                      const allEnabled = enabledCount === group.permissions.length;
                       return (
-                        <button
-                          key={perm.key}
-                          type="button"
-                          onClick={() => togglePermission(perm.key)}
-                          className={`w-full flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
-                            isEnabled
-                              ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                              : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <span className="text-xl">{perm.icon}</span>
-                            <div className="text-left">
-                              <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{perm.label}</div>
-                              <div className="text-xs text-slate-500 dark:text-slate-400">{perm.desc}</div>
+                        <div key={group.key} className="border-2 rounded-xl overflow-hidden transition-all border-slate-200 dark:border-slate-700">
+                          <button
+                            type="button"
+                            onClick={() => setExpandedGroups(prev => prev.includes(group.key) ? prev.filter(k => k !== group.key) : [...prev, group.key])}
+                            className="w-full flex items-center justify-between p-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all"
+                          >
+                            <div className="flex items-center gap-3">
+                              <group.Icon size={20} className={allEnabled ? 'text-indigo-500' : 'text-slate-400 dark:text-slate-500'} />
+                              <div className="text-left">
+                                <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{group.label}</div>
+                                {enabledCount > 0 && (
+                                  <div className="text-xs text-indigo-500">{enabledCount}/{group.permissions.length} tanlangan</div>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                          {isEnabled ? (
-                            <ToggleRight size={28} className="text-indigo-500 flex-shrink-0" />
-                          ) : (
-                            <ToggleLeft size={28} className="text-slate-300 dark:text-slate-600 flex-shrink-0" />
+                            <div className="flex items-center gap-2">
+                              {group.permissions.length > 1 && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const allKeys = group.permissions.map(p => p.key);
+                                    if (allEnabled) {
+                                      setForm(prev => ({ ...prev, permissions: prev.permissions.filter(p => !allKeys.includes(p)) }));
+                                    } else {
+                                      setForm(prev => ({ ...prev, permissions: Array.from(new Set([...prev.permissions, ...allKeys])) }));
+                                    }
+                                  }}
+                                  className={`px-2 py-1 text-[10px] font-bold rounded-md transition-all ${allEnabled ? 'bg-indigo-500 text-white' : 'bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30'}`}
+                                >
+                                  {allEnabled ? 'Hammasini olib tashlash' : 'Hammasini tanlash'}
+                                </button>
+                              )}
+                              <ChevronDown size={18} className={`text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                            </div>
+                          </button>
+                          {isExpanded && (
+                            <div className="border-t border-slate-100 dark:border-slate-700 p-3 space-y-2 bg-slate-50/50 dark:bg-slate-800/50">
+                              {group.permissions.map(perm => {
+                                const isEnabled = form.permissions.includes(perm.key);
+                                return (
+                                  <button
+                                    key={perm.key}
+                                    type="button"
+                                    onClick={() => togglePermission(perm.key)}
+                                    className="w-full flex items-center gap-3 p-2.5 rounded-lg transition-all hover:bg-white dark:hover:bg-slate-700"
+                                  >
+                                    <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-all ${isEnabled ? 'bg-indigo-500 border-indigo-500' : 'border-slate-300 dark:border-slate-600'}`}>
+                                      {isEnabled && <Check size={12} className="text-white" />}
+                                    </div>
+                                    <perm.Icon size={16} className={isEnabled ? 'text-indigo-500' : 'text-slate-400'} />
+                                    <span className={`text-sm font-medium ${isEnabled ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'}`}>{perm.label}</span>
+                                  </button>
+                                );
+                              })}
+                            </div>
                           )}
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -478,14 +587,24 @@ export default function UserDetailPage() {
                   <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3 flex items-center">
                     <Shield size={14} className="mr-2 text-indigo-500" /> Berilgan ruxsatlar
                   </h3>
-                  <div className="flex flex-wrap gap-2">
-                    {user.permissions.map(pKey => {
-                      const perm = ALL_PERMISSIONS.find(p => p.key === pKey);
+                  <div className="space-y-2">
+                    {PERMISSION_GROUPS.filter(g => g.permissions.some(p => user.permissions.includes(p.key))).map(group => {
+                      const enabledPerms = group.permissions.filter(p => user.permissions.includes(p.key));
                       return (
-                        <span key={pKey} className="inline-flex items-center px-3 py-1.5 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold border border-indigo-200 dark:border-indigo-800">
-                          <span className="mr-1.5">{perm?.icon || '🔑'}</span>
-                          {perm?.label || pKey}
-                        </span>
+                        <div key={group.key} className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-xl">
+                          <div className="flex items-center gap-2 mb-2">
+                            <group.Icon size={16} className="text-indigo-500" />
+                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200">{group.label}</span>
+                          </div>
+                          <div className="flex flex-wrap gap-2 ml-6">
+                            {enabledPerms.map(p => (
+                              <span key={p.key} className="inline-flex items-center px-2.5 py-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300 rounded-lg text-xs font-bold border border-indigo-200 dark:border-indigo-800">
+                                <p.Icon size={12} className="mr-1.5" />
+                                {p.label}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
                       );
                     })}
                   </div>

@@ -26,7 +26,13 @@ export default function MobileDashboard() {
   const recentOrders = stats?.recentOrders || [];
   const rate = stats?.exchangeRate?.rate || 12500;
   const topMax = stats?.topProducts?.[0]?.totalRevenue || 1;
-  const RANK_COLORS = ['#0f172a', '#64748b', '#94a3b8']; // Updated to slate tones
+  const RANK_COLORS = ['#0f172a', '#64748b', '#94a3b8'];
+
+  const chartData = stats?.salesPurchasesChart || [];
+  const trendPercent = chartData.length >= 2
+    ? ((chartData[chartData.length - 1].savdo - chartData[chartData.length - 2].savdo) / Math.abs(chartData[chartData.length - 2].savdo || 1) * 100).toFixed(1)
+    : '0.0';
+  const trendIsPositive = trendPercent !== '0.0' && parseFloat(trendPercent) > 0;
 
   return (
     <div className="w-full pb-6">
@@ -48,10 +54,10 @@ export default function MobileDashboard() {
               <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Umumiy Balans</span>
             </div>
             <div className="text-4xl font-black mb-1 tracking-tight">${loading ? '...' : balance.toLocaleString()}</div>
-            <div className="flex items-center gap-1.5 text-sm text-emerald-400 font-bold mb-5">
-               <TrendingUp size={16} /> 
-               <span>+2.4% <span className="text-slate-400 font-medium">vs Kecha</span></span>
-            </div>
+            <div className={`flex items-center gap-1.5 text-sm font-bold mb-5 ${trendIsPositive ? 'text-emerald-400' : 'text-rose-400'}`}>
+               {trendIsPositive ? <TrendingUp size={16} /> : <TrendingUp size={16} className="rotate-180" />}
+               <span>{trendIsPositive ? '+' : ''}{trendPercent}% <span className="text-slate-400 font-medium">vs oldingi kun</span></span>
+             </div>
             
             <div className="h-px bg-slate-800 w-full mb-4"></div>
 

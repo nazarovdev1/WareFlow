@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { checkPermission } from '@/lib/checkPermission';
 
 // GET /api/products/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('view_products');
+    if (error) return error;
+
     const { id } = await params;
     const product = await prisma.product.findUnique({
       where: { id },
@@ -28,6 +32,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // PUT /api/products/[id]
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('edit_products');
+    if (error) return error;
+
     const { id } = await params;
     const body = await req.json();
     const product = await prisma.product.update({
@@ -64,6 +71,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 // DELETE /api/products/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('delete_products');
+    if (error) return error;
+
     const { id } = await params;
     await prisma.$transaction([
       prisma.stockEntry.deleteMany({ where: { productId: id } }),

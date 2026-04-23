@@ -7,6 +7,25 @@ datasource db {
   provider = "postgresql"
 }
 
+// ─── COMPANY DOMAIN ──────────────────────────────
+
+model Company {
+  id        String   @id @default(cuid())
+  name      String
+  address   String?
+  phone     String?
+  email     String?
+  inn       String?  // INN/Tax ID
+  logo      String?
+  isActive  Boolean  @default(true)
+
+  users     User[]
+  warehouses Warehouse[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // ─── PRODUCT DOMAIN ──────────────────────────────
 
 model Category {
@@ -42,6 +61,7 @@ model Product {
   barcode        String?  @unique
   barcodeType    String   @default("EAN13") // EAN13, Code128, UPC
   imageUrl       String?
+  weight         Float?
 
   sellPrice      Float    @default(0)
   wholesalePrice Float    @default(0)
@@ -58,13 +78,49 @@ model Product {
   updatedAt      DateTime @updatedAt
 
   stockEntries        StockEntry[]
+  stockThresholds    StockThreshold[]
+  variants           ProductVariant[]
   transferItems       TransferItem[]
   inventoryAuditItems InventoryAuditItem[]
   priceListItems      PriceListItem[]
   purchaseItems       PurchaseItem[]
   orderItems          OrderItem[]
+  batches             ProductBatch[]
+  deliveryItems       DeliveryItem[]
+  forecasts           DemandForecast[]
 
   @@index([categoryId])
+  @@index([name])
+}
+
+// ─── PRODUCT VARIANTS DOMAIN ─────────────────────
+
+model ProductVariant {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name       String   // "Oq", "Qora", "Moviy", "S" "M" "L"
+  sku         String?  @unique
+  price      Float    @default(0)
+  costPrice  Float    @default(0)
+  quantity   Float    @default(0)
+  imageUrl   String?
+  isActive   Boolean  @default(true)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([productId])
+  @@index([sku])
+}
+
+model VariantOption {
+  id        String   @id @default(cuid())
+  name      String   // "Rang", "O'lcham", "Material"
+  values    String   // JSON array: ["Oq","Qora","Qizil"]
+
+  createdAt DateTime  @default(now())
+
   @@index([name])
 }
 
@@ -75,11 +131,18 @@ model Warehouse {
   name      String
   address   String?
   district  String?
+  latitude  Float?
+  longitude Float?
   isDefault Boolean  @default(false)
+
+  companyId String?
+  company   Company?  @relation(fields: [companyId], references: [id])
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   stockEntries     StockEntry[]
+  stockThresholds StockThreshold[]
   transfersFrom    Transfer[]          @relation("TransferFrom")
   transfersTo      Transfer[]          @relation("TransferTo")
   inventoryAudits  InventoryAudit[]
@@ -88,6 +151,8 @@ model Warehouse {
   orders           Order[]
   users            User[]
   userRequests     UserRequest[]
+  batches          ProductBatch[]
+  deliveries       Delivery[]
 }
 
 model StockEntry {
@@ -103,6 +168,24 @@ model StockEntry {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@unique([productId, warehouseId])
+  @@index([warehouseId])
+}
+
+// ─── STOCK THRESHOLD DOMAIN (OMBOR ORNATI) ─────────
+
+model StockThreshold {
+  id         String   @id @default(cuid())
+  productId  String
+  product    Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId String
+  warehouse  Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  minStock   Float    @default(0)
+  enabled    Boolean  @default(true)
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   @@unique([productId, warehouseId])
   @@index([warehouseId])
@@ -248,10 +331,15 @@ model Customer {
   fullName    String
   companyName String?
   phone       String?
+  address     String?
+  latitude    Float?
+  longitude   Float?
   region      String?
   status      CustomerStatus @default(ACTIVE)
   balanceUSD  Float          @default(0)
   balanceUZS  Float          @default(0)
+  creditLimit Float          @default(0) // Credit limit in USD
+  creditUsed  Float          @default(0) // Used credit
 
   groupId     String?
   group       CustomerGroup? @relation(fields: [groupId], references: [id])
@@ -261,6 +349,10 @@ model Customer {
 
   transactions CustomerTransaction[]
   orders       Order[]
+  deliveries   Delivery[]
+  routeStops   DeliveryRouteStop[]
+  contracts    Contract[]
+  loyaltyAccount LoyaltyAccount?
 
   @@index([groupId])
   @@index([fullName])
@@ -311,6 +403,8 @@ model Supplier {
 
   transactions  SupplierTransaction[]
   purchases     Purchase[]
+  batches       ProductBatch[]
+  contracts     Contract[]
 
   @@index([name])
 }
@@ -380,6 +474,9 @@ model User {
   isActive    Boolean  @default(true)
   permissions String[] @default([])
 
+  companyId   String?
+  company     Company?  @relation(fields: [companyId], references: [id])
+
   warehouseId String?
   warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
 
@@ -389,6 +486,8 @@ model User {
   subscriptions     Subscription[]
   userNotifications UserNotification[]
   settings          UserSettings?
+  telegramChat      TelegramChat?
+  salesAgent        SalesAgent?
 
   @@index([warehouseId])
   @@index([phone])
@@ -497,6 +596,10 @@ model Order {
   notes         String?
 
   items         OrderItem[]
+  delivery      Delivery?
+  commission    Commission?
+  agentId       String?
+  agent         SalesAgent? @relation(fields: [agentId], references: [id])
 
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
@@ -507,17 +610,20 @@ model Order {
 }
 
 model OrderItem {
-  id        String  @id @default(cuid())
+  id        String        @id @default(cuid())
   orderId   String
-  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  order     Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
   productId String
-  product   Product @relation(fields: [productId], references: [id])
+  product   Product      @relation(fields: [productId], references: [id])
   quantity  Float
-  price     Float   // Selling price at the time of sale
+  price     Float         // Selling price at the time of sale
   total     Float
+  batchId   String?
+  batch     ProductBatch? @relation(fields: [batchId], references: [id], onDelete: SetNull)
 
   @@index([orderId])
   @@index([productId])
+  @@index([batchId])
 }
 
 // ─── CASHBOX DOMAIN (KASSA) ─────────────────────
@@ -588,6 +694,79 @@ model AdminNotification {
   @@index([createdAt])
 }
 
+// ─── ACTIVITY LOG (FAOLIANAT KUNDALIGI) ─────────
+
+enum ActivityType {
+  CREATE
+  UPDATE
+  DELETE
+  LOGIN
+  LOGOUT
+  EXPORT
+  IMPORT
+}
+
+model ActivityLog {
+  id          String      @id @default(cuid())
+  userId      String
+  userName   String?
+  userRole   String?
+  type        ActivityType
+  entity     String      // "Order", "Product", "Customer" etc.
+  entityId   String?
+  action     String      // "created order SL-000001", "updated product X", "deleted customer Y"
+  details    String?     // JSON string containing changes
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime   @default(now())
+
+  @@index([userId])
+  @@index([entity])
+  @@index([createdAt])
+}
+
+// ─── WEBHOOKS & API KEYS ─────────────────────────
+
+enum WebhookEvent {
+  ORDER_CREATED
+  ORDER_UPDATED
+  ORDER_CANCELLED
+  CUSTOMER_CREATED
+  PRODUCT_LOW_STOCK
+}
+
+model ApiKey {
+  id          String   @id @default(cuid())
+  name        String
+  key         String   @unique // Hashed API key
+  prefix      String   // First 8 chars for display (sk_live_...)
+  permissions String[]  // ["read_orders", "write_products", etc.]
+  expiresAt   DateTime?
+  lastUsedAt DateTime?
+  isActive    Boolean  @default(true)
+  createdBy   String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+}
+
+model Webhook {
+  id          String         @id @default(cuid())
+  name        String
+  url         String         // Webhook URL
+  secret      String?        // Secret for signature verification
+  events      WebhookEvent[] // Events to trigger on
+  isActive    Boolean        @default(true)
+  lastTriggeredAt DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+@@index([isActive])
+}
+
 // ─── USER NOTIFICATIONS ──────────────────────────
 
 model UserNotification {
@@ -602,7 +781,493 @@ model UserNotification {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+   @@index([userId])
+   @@index([isRead])
+   @@index([createdAt])
+}
+
+// ─── TELEGRAM BOT INTEGRATION ─────────────────────
+
+model TelegramBotConfig {
+  id          String   @id @default(cuid())
+  botToken    String   @unique
+  botName     String?
+  isActive    Boolean  @default(true)
+  welcomeMessage String?
+  notifyNewOrder    Boolean @default(true)
+  notifyLowStock    Boolean @default(true)
+  notifyPayment     Boolean @default(true)
+  notifyDailyReport Boolean @default(true)
+  dailyReportTime   String  @default("09:00")
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chats TelegramChat[]
+}
+
+model TelegramChat {
+  id        String   @id @default(cuid())
+  chatId    String   @unique
+  chatType  String   @default("private")
+  username  String?
+  firstName String?
+  lastName  String?
+  isActive  Boolean  @default(true)
+
+  botConfigId String
+  botConfig   TelegramBotConfig @relation(fields: [botConfigId], references: [id], onDelete: Cascade)
+
+  userId     String?  @unique
+  user       User?    @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([botConfigId])
+  @@index([chatId])
+}
+
+// ─── PRODUCT BATCH / EXPIRY TRACKING (FIFO/FEFO) ─
+
+model ProductBatch {
+  id           String    @id @default(cuid())
+  batchNumber  String
+  productId    String
+  product      Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId  String
+  warehouse    Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+  quantity     Float     @default(0)
+  initialQty   Float     @default(0)
+  costPrice    Float     @default(0)
+  manufactureDate DateTime?
+  expiryDate   DateTime?
+  supplierId   String?
+  supplier     Supplier? @relation(fields: [supplierId], references: [id])
+  purchaseId   String?
+  notes        String?
+  isActive     Boolean   @default(true)
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([productId])
+  @@index([warehouseId])
+  @@index([expiryDate])
+  @@index([batchNumber])
+}
+
+// ─── DELIVERY MANAGEMENT ─────────────────────────
+
+enum DeliveryStatus {
+  PREPARING
+  LOADED
+  IN_TRANSIT
+  DELIVERED
+  PARTIALLY_DELIVERED
+  RETURNED
+  CANCELLED
+}
+
+model Delivery {
+  id            String         @id @default(cuid())
+  docNumber     String         @unique
+  date          DateTime       @default(now())
+  orderId       String?   @unique
+  order         Order?    @relation(fields: [orderId], references: [id])
+  customerId    String?
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+  warehouseId   String
+  warehouse     Warehouse      @relation(fields: [warehouseId], references: [id])
+  driverName    String?
+  driverPhone   String?
+  vehicleNumber String?
+  status        DeliveryStatus @default(PREPARING)
+  address       String?
+  latitude      Float?
+  longitude     Float?
+  notes         String?
+  totalWeight   Float?
+  deliveredAt   DateTime?
+
+  items         DeliveryItem[]
+  route         DeliveryRoute?
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([orderId])
+  @@index([customerId])
+  @@index([warehouseId])
+  @@index([status])
+  @@index([date])
+}
+
+model DeliveryItem {
+  id          String   @id @default(cuid())
+  deliveryId  String
+  delivery    Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  quantity    Float
+  deliveredQty Float  @default(0)
+  notes       String?
+
+  @@index([deliveryId])
+  @@index([productId])
+}
+
+model DeliveryRoute {
+  id              String   @id @default(cuid())
+  deliveryId      String   @unique
+  delivery        Delivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  totalDistance   Float    @default(0)
+  estimatedTime   Int?
+  optimizedOrder  String?
+  startedAt       DateTime?
+  completedAt     DateTime?
+  polyline        String?
+
+  stops           DeliveryRouteStop[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([deliveryId])
+}
+
+model DeliveryRouteStop {
+  id          String         @id @default(cuid())
+  routeId     String
+  route       DeliveryRoute  @relation(fields: [routeId], references: [id], onDelete: Cascade)
+  stopOrder   Int
+  customerId  String?
+  customer    Customer?      @relation(fields: [customerId], references: [id])
+  address     String?
+  latitude    Float?
+  longitude   Float?
+  plannedAt   DateTime?
+  arrivedAt   DateTime?
+  status      DeliveryStatus @default(PREPARING)
+  notes       String?
+
+  @@index([routeId])
+  @@index([stopOrder])
+}
+
+// ─── SALES AGENT COMMISSION ──────────────────────
+
+model SalesAgent {
+  id          String   @id @default(cuid())
+  userId      String?  @unique
+  user        User?    @relation(fields: [userId], references: [id])
+  name        String
+  phone       String?
+  commissionRate Float @default(0)
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders      Order[]
+  commissions Commission[]
+
   @@index([userId])
-  @@index([isRead])
+  @@index([name])
+}
+
+model Commission {
+  id          String   @id @default(cuid())
+  agentId     String
+  agent       SalesAgent @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  orderId     String?  @unique
+  order       Order?   @relation(fields: [orderId], references: [id])
+  amount      Float
+  rate        Float
+  saleAmount  Float
+  isPaid      Boolean  @default(false)
+  paidDate    DateTime?
+  period      String?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([agentId])
+  @@index([orderId])
+  @@index([isPaid])
+}
+
+// ─── CUSTOMER LOYALTY PROGRAM ───────────────────
+
+enum LoyaltyTier {
+  BRONZE
+  SILVER
+  GOLD
+  PLATINUM
+}
+
+model LoyaltyProgram {
+  id                String      @id @default(cuid())
+  name              String
+  description       String?
+  isActive          Boolean     @default(true)
+  pointsPerDollar   Float       @default(1)
+  bronzeThreshold   Int         @default(0)
+  bronzeDiscount    Float       @default(0)
+  silverThreshold   Int         @default(500)
+  silverDiscount    Float       @default(5)
+  goldThreshold     Int         @default(2000)
+  goldDiscount      Float       @default(10)
+  platinumThreshold Int         @default(5000)
+  platinumDiscount  Float       @default(15)
+
+  createdAt         DateTime    @default(now())
+  updatedAt         DateTime    @updatedAt
+}
+
+model LoyaltyAccount {
+  id            String       @id @default(cuid())
+  customerId    String       @unique
+  customer      Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  points        Int          @default(0)
+  totalEarned   Int          @default(0)
+  totalRedeemed Int          @default(0)
+  tier          LoyaltyTier  @default(BRONZE)
+  isActive      Boolean      @default(true)
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  transactions  LoyaltyTransaction[]
+
+  @@index([customerId])
+  @@index([tier])
+}
+
+model LoyaltyTransaction {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     LoyaltyAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  type        String
+  points      Int
+  orderId     String?
+  description String?
+  expiresAt   DateTime?
+
+  createdAt   DateTime @default(now())
+
+  @@index([accountId])
+  @@index([type])
   @@index([createdAt])
+}
+
+// ─── EXPENSE MANAGEMENT ──────────────────────────
+
+enum ExpenseStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PAID
+}
+
+model ExpenseCategory {
+  id          String   @id @default(cuid())
+  name        String
+  icon        String?
+  color       String?
+  budget      Float?
+  isActive    Boolean  @default(true)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  expenses    Expense[]
+
+  @@index([name])
+}
+
+model Expense {
+  id          String        @id @default(cuid())
+  categoryId  String
+  category    ExpenseCategory @relation(fields: [categoryId], references: [id])
+  amount      Float
+  currency    String        @default("UZS")
+  description String?
+  date        DateTime      @default(now())
+  status      ExpenseStatus @default(PENDING)
+  receiptUrl  String?
+  requestedBy String?
+  approvedBy  String?
+  approvedAt  DateTime?
+  notes       String?
+
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@index([categoryId])
+  @@index([status])
+  @@index([date])
+}
+
+// ─── PRINT TEMPLATE BUILDER ──────────────────────
+
+enum TemplateType {
+  INVOICE
+  RECEIPT
+  WAYBILL
+  ACT
+  CUSTOM
+}
+
+model PrintTemplate {
+  id          String       @id @default(cuid())
+  name        String
+  type        TemplateType @default(INVOICE)
+  content     String
+  isActive    Boolean      @default(true)
+  isDefault   Boolean      @default(false)
+  paperSize   String       @default("A4")
+  orientation String       @default("portrait")
+
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@index([type])
+  @@index([isActive])
+}
+
+// ─── 1C ACCOUNTING INTEGRATION ───────────────────
+
+enum SyncStatus {
+  PENDING
+  SYNCING
+  COMPLETED
+  FAILED
+}
+
+model OneCSyncLog {
+  id          String     @id @default(cuid())
+  entityType  String
+  entityId    String?
+  action      String
+  status      SyncStatus @default(PENDING)
+  payload     String?
+  response    String?
+  error       String?
+  syncedAt    DateTime?
+
+  createdAt   DateTime   @default(now())
+
+  @@index([entityType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model OneCConfig {
+  id          String   @id @default(cuid())
+  apiUrl      String
+  apiKey      String
+  isActive    Boolean  @default(true)
+  syncInterval Int?
+  lastSyncAt  DateTime?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ─── CONTRACT MANAGEMENT ─────────────────────────
+
+enum ContractStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+model Contract {
+  id            String         @id @default(cuid())
+  contractNumber String        @unique
+  title         String
+  type          String
+  status        ContractStatus @default(DRAFT)
+  startDate     DateTime
+  endDate       DateTime?
+  value         Float?
+  currency      String         @default("USD")
+  description   String?
+  terms         String?
+
+  customerId    String?
+  customer      Customer?      @relation(fields: [customerId], references: [id])
+  supplierId    String?
+  supplier      Supplier?      @relation(fields: [supplierId], references: [id])
+
+  attachments   ContractAttachment[]
+  payments      ContractPayment[]
+
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  @@index([customerId])
+  @@index([supplierId])
+  @@index([status])
+  @@index([endDate])
+}
+
+model ContractAttachment {
+  id          String   @id @default(cuid())
+  contractId  String
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  fileName    String
+  fileUrl     String
+  fileType    String?
+  fileSize    Int?
+  description String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([contractId])
+}
+
+model ContractPayment {
+  id          String   @id @default(cuid())
+  contractId  String
+  contract    Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  amount      Float
+  currency    String   @default("USD")
+  dueDate     DateTime
+  paidDate    DateTime?
+  isPaid      Boolean  @default(false)
+  notes       String?
+
+  createdAt   DateTime @default(now())
+
+  @@index([contractId])
+  @@index([isPaid])
+  @@index([dueDate])
+}
+
+// ─── AI DEMAND FORECAST ──────────────────────────
+
+model DemandForecast {
+  id          String   @id @default(cuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  warehouseId String?
+  period      String
+  predictedQty Float
+  confidence  Float    @default(0)
+  algorithm   String
+  inputData   String?
+  month       Int
+  year        Int
+
+  createdAt   DateTime @default(now())
+
+  @@unique([productId, warehouseId, month, year])
+  @@index([productId])
+  @@index([month, year])
 }

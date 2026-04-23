@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { checkPermission } from '@/lib/checkPermission';
 
 const UpdateSchema = z.object({
   status: z.enum(['COMPLETED', 'CANCELLED', 'DRAFT']).optional(),
@@ -10,6 +11,9 @@ const UpdateSchema = z.object({
 // GET /api/purchases/[id]
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('view_purchases');
+    if (error) return error;
+
     const { id } = await params;
     const purchase = await prisma.purchase.findUnique({
       where: { id },
@@ -29,6 +33,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 // PATCH /api/purchases/[id] — cancel purchase
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('edit_purchases');
+    if (error) return error;
+
     const { id } = await params;
     const body = await request.json();
     const result = UpdateSchema.safeParse(body);

@@ -1,7 +1,18 @@
-import { NextAuthOptions } from "next-auth";
+import { NextAuthOptions, User } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import prisma from "./db";
 import bcrypt from "bcryptjs";
+import { UserRole } from "@prisma/client";
+
+interface ExtendedUser extends User {
+  id: string;
+  name?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  role: UserRole;
+  warehouseId?: string | null;
+  permissions: string[];
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -47,26 +58,27 @@ export const authOptions: NextAuthOptions = {
           role: user.role,
           warehouseId: user.warehouseId,
           permissions: user.permissions || [],
-        };
+        } as ExtendedUser;
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.id = user.id;
-        token.role = (user as any).role;
-        token.warehouseId = (user as any).warehouseId;
-        token.permissions = (user as any).permissions || [];
+        const extendedUser = user as ExtendedUser;
+        token.id = extendedUser.id;
+        token.role = extendedUser.role;
+        token.warehouseId = extendedUser.warehouseId;
+        token.permissions = extendedUser.permissions || [];
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
-        (session.user as any).id = token.id;
-        (session.user as any).role = token.role;
-        (session.user as any).warehouseId = token.warehouseId;
-        (session.user as any).permissions = token.permissions || [];
+        session.user.id = token.id as string;
+        session.user.role = token.role as UserRole;
+        session.user.warehouseId = token.warehouseId as string | undefined;
+        session.user.permissions = (token.permissions as string[]) || [];
       }
       return session;
     },
@@ -77,5 +89,8 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || "wareflow-fallback-secret-key-12345",
+  secret: process.env.NEXTAUTH_SECRET || (() => {
+    console.warn('⚠️  WARNING: Using fallback NEXTAUTH_SECRET. Please set NEXTAUTH_SECRET in production environment variables.');
+    return "wareflow-fallback-secret-key-12345";
+  })(),
 };

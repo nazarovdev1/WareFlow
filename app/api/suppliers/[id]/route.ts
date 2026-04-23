@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { checkPermission } from '@/lib/checkPermission';
 
 // GET /api/suppliers/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('view_suppliers');
+    if (error) return error;
+
     const { id } = await params;
     const supplier = await prisma.supplier.findUnique({
       where: { id },
@@ -21,6 +25,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // PUT /api/suppliers/[id]
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('edit_suppliers');
+    if (error) return error;
+
     const { id } = await params;
     const body = await req.json();
     const supplier = await prisma.supplier.update({
@@ -45,6 +52,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 // DELETE /api/suppliers/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { error } = await checkPermission('delete_suppliers');
+    if (error) return error;
+
     const { id } = await params;
     // DELETE related transactions first
     await prisma.supplierTransaction.deleteMany({ where: { supplierId: id } });

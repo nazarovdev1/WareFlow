@@ -1,72 +1,148 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
-import { z } from 'zod';
 
-const UpdateSchema = z.object({
-  status: z.enum(['COMPLETED', 'CANCELLED', 'RETURNED']).optional(),
-  paymentMethod: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-// GET /api/orders/[id]
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await params;
     const order = await prisma.order.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
-        customer: { select: { id: true, fullName: true, phone: true, balanceUSD: true, balanceUZS: true } },
-        warehouse: { select: { id: true, name: true } },
-        items: { include: { product: { select: { id: true, name: true, sku: true } } } },
+        customer: {
+          select: {
+            id: true,
+            fullName: true,
+            phone: true,
+            companyName: true,
+          },
+        },
+        warehouse: {
+          select: {
+            id: true,
+            name: true,
+            address: true,
+          },
+        },
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                barcode: true,
+              },
+            },
+          },
+        },
       },
     });
-    if (!order) return NextResponse.json({ error: 'Buyurtma topilmadi' }, { status: 404 });
+
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
     return NextResponse.json(order);
-  } catch (error) {
+  } catch (err) {
+    console.error('Order detail error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// PATCH /api/orders/[id] — cancel order
-export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   try {
-    const { id } = await params;
-    const body = await request.json();
-    const result = UpdateSchema.safeParse(body);
-    if (!result.success) return NextResponse.json({ error: 'Noto\'g\'ri ma\'lumot' }, { status: 400 });
+    const body = await req.json();
+    const { status, returnItems, returnReason } = body;
 
     const order = await prisma.order.findUnique({
-      where: { id },
-      include: { items: { select: { productId: true, quantity: true } } },
+      where: { id: params.id },
+      include: { items: true, customer: true },
     });
-    if (!order) return NextResponse.json({ error: 'Buyurtma topilmadi' }, { status: 404 });
 
-    // Cancel order — restore stock and customer balance
-    if (result.data.status === 'CANCELLED' && order.status === 'COMPLETED') {
-      await prisma.$transaction(async (tx) => {
-        for (const item of order.items) {
-          await tx.stockEntry.updateMany({
-            where: { productId: item.productId, warehouseId: order.warehouseId },
-            data: { quantity: { increment: item.quantity } },
-          });
-        }
-        // Restore customer balance if was a customer order with amount
-        if (order.customerId && order.finalAmount > 0) {
-          await tx.customer.update({
-            where: { id: order.customerId },
-            data: { balanceUSD: { decrement: order.finalAmount } },
-          });
-        }
-        // Update order status
-        await tx.order.update({ where: { id }, data: { status: 'CANCELLED' } });
-      });
-    } else {
-      await prisma.order.update({ where: { id }, data: result.data });
+    if (!order) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true });
-  } catch (error) {
-    console.error('PATCH /api/orders/[id] error:', error);
+    if (status === 'CANCELLED') {
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: params.id },
+          data: { status: 'CANCELLED' },
+        });
+
+        for (const item of order.items) {
+          await tx.stockEntry.updateMany({
+            where: {
+              productId: item.productId,
+              warehouseId: order.warehouseId,
+            },
+            data: {
+              quantity: { increment: item.quantity },
+            },
+          });
+        }
+
+        if (order.customerId && order.finalAmount) {
+          await tx.customer.update({
+            where: { id: order.customerId },
+            data: {
+              balanceUSD: { decrement: order.finalAmount },
+            },
+          });
+        }
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
+    if (status === 'RETURNED') {
+      if (!returnItems || returnItems.length === 0) {
+        return NextResponse.json({ error: 'Return items required' }, { status: 400 });
+      }
+
+      await prisma.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: params.id },
+          data: { 
+            status: 'RETURNED',
+            notes: returnReason ? (order.notes || '') + `\n\nQaytarish sababi: ${returnReason}` : order.notes,
+          },
+        });
+
+        for (const returnItem of returnItems) {
+          await tx.stockEntry.updateMany({
+            where: {
+              productId: returnItem.productId,
+              warehouseId: order.warehouseId,
+            },
+            data: {
+              quantity: { increment: returnItem.quantity },
+            },
+          });
+        }
+
+        const returnTotal = returnItems.reduce((sum: number, item: any) => sum + (item.quantity * item.price), 0);
+
+        if (order.customerId && returnTotal) {
+          await tx.customer.update({
+            where: { id: order.customerId },
+            data: {
+              balanceUSD: { decrement: returnTotal },
+            },
+          });
+        }
+      });
+
+      return NextResponse.json({ success: true });
+    }
+
+    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+  } catch (err) {
+    console.error('Order update error:', err);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

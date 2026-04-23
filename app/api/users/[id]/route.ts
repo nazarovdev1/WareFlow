@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { ALL_PERMISSIONS } from '@/lib/permissions';
 
 const UpdateUserSchema = z.object({
   name: z.string().optional(),
@@ -12,7 +13,7 @@ const UpdateUserSchema = z.object({
   phone: z.string().optional(),
   isActive: z.boolean().optional(),
   warehouseId: z.string().optional().nullable(),
-  permissions: z.array(z.string()).optional(),
+  permissions: z.array(z.enum(ALL_PERMISSIONS)).optional(),
 });
 
 const ChangePasswordSchema = z.object({

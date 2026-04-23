@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { checkPermission } from '@/lib/checkPermission';
 
 // GET /api/suppliers
 export async function GET(req: NextRequest) {
   try {
+    const { error } = await checkPermission('view_suppliers');
+    if (error) return error;
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status');
@@ -45,6 +49,9 @@ export async function GET(req: NextRequest) {
 // POST /api/suppliers
 export async function POST(req: NextRequest) {
   try {
+    const { error } = await checkPermission('create_suppliers');
+    if (error) return error;
+
     const body = await req.json();
     if (!body.name) {
       return NextResponse.json({ error: 'Ta\'minotchi nomi majburiy' }, { status: 400 });

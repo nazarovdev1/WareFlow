@@ -3,18 +3,9 @@
 import { Bell, ChevronLeft, Check, X, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-
-interface AppNotification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  link?: string | null;
-  isRead: boolean;
-  createdAt: string;
-}
+import { useNotifications, getNotificationIcon, timeAgo } from '@/hooks/useNotifications';
 
 interface MobileHeaderProps {
   title?: string;
@@ -26,87 +17,19 @@ export default function MobileHeader({ title, backHref, rightAction }: MobileHea
   const router = useRouter();
   const { data: session } = useSession();
   const [showNotifications, setShowNotifications] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const isAdmin = (session?.user as any)?.role === 'ADMIN';
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const apiBase = isAdmin ? '/api/notifications' : '/api/user-notifications';
-
-  const fetchNotifications = useCallback(async () => {
-    if (!session) return;
-    try {
-      const res = await fetch(`${apiBase}?limit=30`);
-      if (!res.ok) return;
-      const json = await res.json();
-      setNotifications(json.data || []);
-      setUnreadCount(json.unreadCount ?? 0);
-    } catch (e) {}
-  }, [session, apiBase]);
-
-  useEffect(() => {
-    if (!session) return;
-    fetchNotifications();
-    intervalRef.current = setInterval(fetchNotifications, 30000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [fetchNotifications, session]);
+  const {
+    notifications,
+    unreadCount,
+    isAdmin,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+  } = useNotifications();
 
   const handleBellClick = () => {
     setShowNotifications(prev => !prev);
     if (!showNotifications) fetchNotifications();
-  };
-
-  const markAsRead = async (id: string) => {
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, isRead: true } : n));
-    setUnreadCount(prev => Math.max(0, prev - 1));
-    try {
-      await fetch(`${apiBase}/${id}`, { method: 'PATCH' });
-    } catch (e) {
-      fetchNotifications();
-    }
-  };
-
-  const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    setUnreadCount(0);
-    try {
-      await fetch(`${apiBase}/mark-all-read`, { method: 'PATCH' });
-    } catch (e) {
-      fetchNotifications();
-    }
-  };
-
-  const deleteNotification = async (id: string) => {
-    const n = notifications.find(n => n.id === id);
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    if (n && !n.isRead) setUnreadCount(prev => Math.max(0, prev - 1));
-    try {
-      await fetch(`${apiBase}/${id}`, { method: 'DELETE' });
-    } catch (e) {
-      fetchNotifications();
-    }
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'new_user_request': return '👤';
-      case 'order': return '🛒';
-      case 'purchase': return '📦';
-      case 'stock_low': return '⚠️';
-      case 'product_transfer': return '📦';
-      case 'info': return 'ℹ️';
-      default: return '🔔';
-    }
-  };
-
-  const timeAgo = (date: string) => {
-    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-    if (seconds < 60) return 'Hozirgina';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} daqiqa oldin`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} soat oldin`;
-    return `${Math.floor(seconds / 86400)} kun oldin`;
   };
 
   return (
@@ -143,7 +66,6 @@ export default function MobileHeader({ title, backHref, rightAction }: MobileHea
         </div>
       </div>
 
-      {/* Notifications Modal Overlay */}
       {showNotifications && (
         <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-[100]" onClick={() => setShowNotifications(false)}>
           <div className="absolute top-0 right-0 bottom-0 w-full max-w-sm bg-white dark:bg-slate-900 shadow-2xl flex flex-col" onClick={e => e.stopPropagation()}>

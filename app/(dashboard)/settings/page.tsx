@@ -9,11 +9,12 @@ import {
   Globe, Bell, User, Shield, Database, Moon, Sun,
   Check, Download, Upload, RefreshCw, Trash, Eye,
   EyeOff, LayoutTemplate, Phone, Mail, UserCircle,
-  Save, AlertCircle, Info
+  Save, AlertCircle, Info, AlertTriangle, Activity,
+  Plus, Edit3, LogIn, LogOut
 } from 'lucide-react';
 import type { Language } from '@/lib/i18n/translations';
 
-type SettingsTab = 'language' | 'notifications' | 'profile' | 'security' | 'appearance' | 'database';
+type SettingsTab = 'language' | 'notifications' | 'profile' | 'security' | 'appearance' | 'database' | 'stock' | 'activity';
 
 export default function SettingsPage() {
   const { t, language, setLanguage } = useLanguage();
@@ -52,6 +53,14 @@ export default function SettingsPage() {
     role: '',
   });
 
+  const [stockThresholds, setStockThresholds] = useState<any[]>([]);
+  const [stockLoading, setStockLoading] = useState(false);
+  const [newThreshold, setNewThreshold] = useState({ productId: '', warehouseId: '', minStock: 0 });
+
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityFilters, setActivityFilters] = useState({ entity: '', type: '' });
+
   const [passwords, setPasswords] = useState({
     current: '',
     new: '',
@@ -84,6 +93,15 @@ export default function SettingsPage() {
     loadNotificationSettings();
   }, []);
 
+  useEffect(() => {
+    if (activeTab === 'stock') {
+      loadStockThresholds();
+    }
+    if (activeTab === 'activity') {
+      loadActivityLogs();
+    }
+  }, [activeTab, activityFilters]);
+
   const loadProfile = async () => {
     setProfileLoading(true);
     try {
@@ -103,6 +121,40 @@ export default function SettingsPage() {
       console.error('Failed to load profile:', err);
     } finally {
       setProfileLoading(false);
+    }
+  };
+
+  const loadStockThresholds = async () => {
+    setStockLoading(true);
+    try {
+      const res = await fetch('/api/stock-thresholds');
+      if (res.ok) {
+        const data = await res.json();
+        setStockThresholds(data);
+      }
+    } catch (err) {
+      console.error('Failed to load stock thresholds:', err);
+    } finally {
+      setStockLoading(false);
+    }
+  };
+
+  const loadActivityLogs = async () => {
+    setActivityLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (activityFilters.entity) params.append('entity', activityFilters.entity);
+      if (activityFilters.type) params.append('type', activityFilters.type);
+      
+      const res = await fetch(`/api/activity-logs?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setActivityLogs(data.data);
+      }
+    } catch (err) {
+      console.error('Failed to load activity logs:', err);
+    } finally {
+      setActivityLoading(false);
     }
   };
 
@@ -142,6 +194,48 @@ export default function SettingsPage() {
       }
     } catch (err) {
       setNotificationSettings(notificationSettings);
+      error(t('messages', 'error'), t('messages', 'error'));
+    }
+  };
+
+  const handleAddThreshold = async () => {
+    if (!newThreshold.productId || !newThreshold.warehouseId) {
+      error('Xatolik', 'Mahsulot va ombor tanlang');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/stock-thresholds', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newThreshold),
+      });
+
+      if (res.ok) {
+        success('Muvaffaqiyatli', 'Ornatilgan miqdor qo\'shildi');
+        setNewThreshold({ productId: '', warehouseId: '', minStock: 0 });
+        loadStockThresholds();
+      } else {
+        error(t('messages', 'error'), t('messages', 'error'));
+      }
+    } catch (err) {
+      error(t('messages', 'error'), t('messages', 'error'));
+    }
+  };
+
+  const handleDeleteThreshold = async (id: string) => {
+    try {
+      const res = await fetch(`/api/stock-thresholds/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (res.ok) {
+        success('Muvaffaqiyatli', 'Ornatilgan miqdor o\'chirildi');
+        loadStockThresholds();
+      } else {
+        error(t('messages', 'error'), t('messages', 'error'));
+      }
+    } catch (err) {
       error(t('messages', 'error'), t('messages', 'error'));
     }
   };
@@ -354,6 +448,8 @@ export default function SettingsPage() {
   const tabs: { id: SettingsTab; label: string; icon: any }[] = [
     { id: 'language', label: t('settings', 'language'), icon: Globe },
     { id: 'notifications', label: t('settings', 'notifications'), icon: Bell },
+    { id: 'stock', label: 'Ombor bildirishnomalari', icon: AlertTriangle },
+    { id: 'activity', label: 'Faoliyat loglari', icon: Activity },
     { id: 'profile', label: t('settings', 'profile'), icon: User },
     { id: 'security', label: t('settings', 'security'), icon: Shield },
     { id: 'appearance', label: t('settings', 'appearance'), icon: LayoutTemplate },
@@ -545,9 +641,101 @@ export default function SettingsPage() {
                           <div>
                             <div className="text-xs text-indigo-600/70 dark:text-indigo-400/70 font-medium">Lavozim</div>
                             <div className="font-bold text-sm text-indigo-700 dark:text-indigo-300">{roleLabel(profile.role)}</div>
-                          </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ── ACTIVITY TAB ── */}
+              {activeTab === 'activity' as any && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SectionHeader
+                    icon={<Activity size={20} />}
+                    title="Faoliyat loglari"
+                    desc="Barcha foydalanuvchi harakatlarini kuzating"
+                  />
+                  <div className="space-y-5 max-w-4xl">
+                    {/* Filters */}
+                    <div className="flex gap-3">
+                      <select
+                        value={activityFilters.entity}
+                        onChange={(e) => setActivityFilters({ ...activityFilters, entity: e.target.value })}
+                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
+                      >
+                        <option value="">Barcha ob'ektlar</option>
+                        <option value="Order">Buyurtmalar</option>
+                        <option value="Product">Mahsulotlar</option>
+                        <option value="Customer">Mijozlar</option>
+                        <option value="Supplier">Ta'minotchilar</option>
+                        <option value="Warehouse">Omborlar</option>
+                        <option value="User">Foydalanuvchilar</option>
+                      </select>
+                      <select
+                        value={activityFilters.type}
+                        onChange={(e) => setActivityFilters({ ...activityFilters, type: e.target.value })}
+                        className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200"
+                      >
+                        <option value="">Barcha amallar</option>
+                        <option value="CREATE">Yaratish</option>
+                        <option value="UPDATE">Yangilash</option>
+                        <option value="DELETE">O'chirish</option>
+                        <option value="LOGIN">Kirish</option>
+                        <option value="LOGOUT">Chiqish</option>
+                      </select>
+                      <button
+                        onClick={loadActivityLogs}
+                        className="p-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
+                      >
+                        <RefreshCw size={16} />
+                      </button>
+                    </div>
+
+                    {/* Activity Log List */}
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                      {activityLoading ? (
+                        <div className="p-8 flex items-center justify-center">
+                          <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+                        </div>
+                      ) : activityLogs.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+                          Hozircha faoliyat loglari yo'q
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                          {activityLogs.map((log) => (
+                            <div key={log.id} className="p-4 flex items-start gap-4 hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                              <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                                log.type === 'CREATE' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' :
+                                log.type === 'UPDATE' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' :
+                                log.type === 'DELETE' ? 'bg-red-100 text-red-600 dark:bg-red-500/20 dark:text-red-400' :
+                                log.type === 'LOGIN' ? 'bg-violet-100 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400' :
+                                'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                              }`}>
+                                {log.type === 'CREATE' && <Plus size={16} />}
+                                {log.type === 'UPDATE' && <Edit3 size={16} />}
+                                {log.type === 'DELETE' && <Trash size={16} />}
+                                {log.type === 'LOGIN' && <LogIn size={16} />}
+                                {log.type === 'LOGOUT' && <LogOut size={16} />}
+                                {log.type === 'EXPORT' && <Download size={16} />}
+                                {log.type === 'IMPORT' && <Upload size={16} />}
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-slate-800 dark:text-white">{log.userName || "Noma'lum"}</span>
+                                  <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-500 dark:text-slate-400">{log.userRole || '-'}</span>
+                                </div>
+                                <div className="text-sm text-slate-600 dark:text-slate-300 mt-1">{log.action}</div>
+                                <div className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                                  {log.entity} • {new Date(log.createdAt).toLocaleString('uz-UZ')}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
                       <div>
                         <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -852,6 +1040,110 @@ export default function SettingsPage() {
                         <div className="text-xs text-red-500/80 mt-0.5">Til, mavzu va boshqa sozlamalarni dastlabki holatga qaytarish</div>
                       </div>
                     </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── STOCK TAB ── */}
+              {activeTab === 'stock' && (
+                <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                  <SectionHeader
+                    icon={<AlertTriangle size={20} />}
+                    title="Ombor bildirishnomalari"
+                    desc="Mahsulotlar kam bo'lganda bildirishnomalar olish uchun minimal miqdorlarni sozlang"
+                  />
+                  <div className="space-y-5 max-w-2xl">
+                    {/* Add new threshold */}
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
+                      <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Yangi ornatilgan miqdor qo'shish</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Mahsulot</label>
+                          <select
+                            value={newThreshold.productId}
+                            onChange={(e) => setNewThreshold({ ...newThreshold, productId: e.target.value })}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                          >
+                            <option value="">Mahsulot tanlang...</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Ombor</label>
+                          <select
+                            value={newThreshold.warehouseId}
+                            onChange={(e) => setNewThreshold({ ...newThreshold, warehouseId: e.target.value })}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                          >
+                            <option value="">Ombor tanlang...</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5">Minimal miqdor</label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={newThreshold.minStock}
+                            onChange={(e) => setNewThreshold({ ...newThreshold, minStock: Number(e.target.value) })}
+                            placeholder="0"
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        onClick={handleAddThreshold}
+                        className="w-full bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg py-2.5 transition-colors"
+                      >
+                        Qo'shish
+                      </button>
+                    </div>
+
+                    {/* List of thresholds */}
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                      <div className="p-4 border-b border-slate-100 dark:border-slate-700">
+                        <h3 className="font-semibold text-slate-900 dark:text-white">Mavjud ornatilgan miqdorlar</h3>
+                      </div>
+                      {stockLoading ? (
+                        <div className="p-8 flex items-center justify-center">
+                          <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full" />
+                        </div>
+                      ) : stockThresholds.length === 0 ? (
+                        <div className="p-8 text-center text-slate-500 dark:text-slate-400">
+                          Hozircha ornatilgan miqdorlar yo'q
+                        </div>
+                      ) : (
+                        <div className="divide-y divide-slate-100 dark:divide-slate-700">
+                          {stockThresholds.map((threshold) => (
+                            <div key={threshold.id} className="p-4 flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
+                              <div className="flex-1">
+                                <div className="font-semibold text-slate-800 dark:text-white">{threshold.product?.name}</div>
+                                <div className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                                  {threshold.warehouse?.name} • SKU: {threshold.product?.sku}
+                                </div>
+                              </div>
+                              <div className="text-right mr-4">
+                                <div className="font-black text-amber-600 dark:text-amber-400 text-lg">{threshold.minStock}</div>
+                                <div className="text-xs text-slate-500">donadan kam</div>
+                              </div>
+                              <button
+                                onClick={() => handleDeleteThreshold(threshold.id)}
+                                className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors"
+                                title="O'chirish"
+                              >
+                                <Trash size={16} />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex items-start gap-3 p-4 bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/20 rounded-xl">
+                      <Info size={20} className="text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <div className="text-xs text-amber-700 dark:text-amber-300">
+                        <strong>Qoida:</strong> Mahsulot ombordagi miqdori bu chegaradan tushganda, tizim bildirishnomalar yuboradi.
+                        Bu sizga omborni vaqtda to'ldirishga yordam beradi.
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

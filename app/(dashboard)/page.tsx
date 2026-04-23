@@ -166,30 +166,38 @@ export default function DashboardPage() {
       </div>
 
       {/* Financial Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        <div className="bg-gradient-to-br from-emerald-500 to-emerald-700 p-5 rounded-2xl shadow-sm text-white">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs font-bold text-emerald-100 uppercase tracking-wider">Kassa balansi</div>
-            <Wallet size={18} className="text-emerald-200" />
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 flex items-start gap-4 transition-all duration-200 hover:shadow-md hover:border-emerald-300 dark:hover:border-emerald-600">
+          <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center shrink-0">
+            <Wallet size={22} />
           </div>
-          <div className="text-2xl font-black">${fs?.cashUSD?.toLocaleString() || 0}</div>
-          <div className="text-sm text-emerald-200 mt-1">{((fs?.cashUZS || 0) * (stats?.exchangeRate?.rate || 12500)).toLocaleString()} so'm</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Kassa balansi</div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white">${fs?.cashUSD?.toLocaleString() || 0}</div>
+            <div className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">{((fs?.cashUZS || 0) * (stats?.exchangeRate?.rate || 12500)).toLocaleString()} so'm</div>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-blue-500 to-blue-700 p-5 rounded-2xl shadow-sm text-white">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs font-bold text-blue-100 uppercase tracking-wider">Kutayotgan tushum</div>
-            <TrendingUp size={18} className="text-blue-200" />
+
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 flex items-start gap-4 transition-all duration-200 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600">
+          <div className="w-12 h-12 bg-blue-50 dark:bg-blue-500/15 text-blue-600 dark:text-blue-400 rounded-xl flex items-center justify-center shrink-0">
+            <TrendingUp size={22} />
           </div>
-          <div className="text-2xl font-black">${Math.abs(fs?.customerDebtUSD || 0).toLocaleString()}</div>
-          <div className="text-sm text-blue-200 mt-1">{stats?.financialSummary?.customerDebtUZS ? Math.abs(fs.customerDebtUZS).toLocaleString() + ' so\'m' : ''}</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Kutayotgan tushum</div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white">${Math.abs(fs?.customerDebtUSD || 0).toLocaleString()}</div>
+            <div className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">{stats?.financialSummary?.customerDebtUZS ? Math.abs(fs.customerDebtUZS).toLocaleString() + ' so\'m' : ''}</div>
+          </div>
         </div>
-        <div className="bg-gradient-to-br from-violet-500 to-violet-700 p-5 rounded-2xl shadow-sm text-white">
-          <div className="flex items-center justify-between mb-3">
-            <div className="text-xs font-bold text-violet-100 uppercase tracking-wider">Sof balans</div>
-            <Activity size={18} className="text-violet-200" />
+
+        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 flex items-start gap-4 transition-all duration-200 hover:shadow-md hover:border-violet-300 dark:hover:border-violet-600">
+          <div className="w-12 h-12 bg-violet-50 dark:bg-violet-500/15 text-violet-600 dark:text-violet-400 rounded-xl flex items-center justify-center shrink-0">
+            <Activity size={22} />
           </div>
-          <div className="text-2xl font-black">${fs?.netBalance?.toLocaleString() || 0}</div>
-          <div className="text-sm text-violet-200 mt-1">Qarz va tushumlar hisobiga</div>
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Sof balans</div>
+            <div className="text-2xl font-black text-slate-900 dark:text-white">${fs?.netBalance?.toLocaleString() || 0}</div>
+            <div className="text-sm text-slate-400 dark:text-slate-500 mt-0.5">Qarz va tushumlar hisobiga</div>
+          </div>
         </div>
       </div>
 

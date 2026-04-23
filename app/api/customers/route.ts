@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { checkPermission } from '@/lib/checkPermission';
 
 const CustomerSchema = z.object({
   fullName: z.string().min(1, "Mijoz ismi majburiy"),
@@ -11,12 +12,16 @@ const CustomerSchema = z.object({
   groupId: z.string().optional().nullable(),
   balanceUSD: z.coerce.number().default(0),
   balanceUZS: z.coerce.number().default(0),
+  creditLimit: z.coerce.number().default(0),
 });
 
 
 // GET /api/customers — List customers with filters
 export async function GET(req: NextRequest) {
   try {
+    const { error } = await checkPermission('view_customers');
+    if (error) return error;
+
     const { searchParams } = new URL(req.url);
     const search = searchParams.get('search') || '';
     const region = searchParams.get('region');
@@ -93,6 +98,9 @@ export async function GET(req: NextRequest) {
 // POST /api/customers
 export async function POST(req: NextRequest) {
   try {
+    const { error } = await checkPermission('create_customers');
+    if (error) return error;
+
     const body = await req.json();
     
     // Validate with Zod

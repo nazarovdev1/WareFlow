@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Package, Warehouse, Users, Truck, ShoppingCart, Banknote, Building2, FileBarChart, Settings, ChevronDown, UserRound, UsersRound, CreditCard, UserPlus } from 'lucide-react';
+import { LayoutGrid, Package, Warehouse, Users, Truck, ShoppingCart, Banknote, Building2, FileBarChart, Settings, ChevronDown, UserRound, UsersRound, CreditCard, UserPlus, Server, Layout } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useSession } from 'next-auth/react';
@@ -17,8 +17,8 @@ export default function Sidebar() {
   const [usersOpen, setUsersOpen] = useState(pathname.includes('/users') || pathname.includes('/requests') || pathname.includes('/subscriptions'));
   const [pendingRequests, setPendingRequests] = useState(0);
 
-  const isAdmin = (session?.user as any)?.role === 'ADMIN';
-  const userPermissions: string[] = (session?.user as any)?.permissions || [];
+  const isAdmin = (session?.user as { role?: string })?.role === 'ADMIN';
+  const userPermissions: string[] = (session?.user as { permissions?: string[] })?.permissions || [];
 
   // Admin har doim hamma narsani ko'radi, oddiy user faqat ruxsat berilganlarni
   const hasPermission = (perm: string) => isAdmin || userPermissions.includes(perm);
@@ -75,7 +75,7 @@ export default function Sidebar() {
           </div>
         )}
 
-        {hasPermission('manage_products') && (
+        {hasPermission('view_products') && (
           <div className="mb-1">
             <button
               onClick={() => setMahsulotlarOpen(!mahsulotlarOpen)}
@@ -94,7 +94,7 @@ export default function Sidebar() {
           </div>
         )}
 
-        {hasPermission('manage_warehouse') && (
+        {hasPermission('view_warehouse') && (
           <div className="mb-1">
             <button
               onClick={() => setOmborOpen(!omborOpen)}
@@ -114,7 +114,7 @@ export default function Sidebar() {
           </div>
         )}
 
-        {hasPermission('manage_customers') && (
+        {hasPermission('view_customers') && (
           <div className="mb-1">
             <button
               onClick={() => setMijozlarOpen(!mijozlarOpen)}
@@ -133,7 +133,7 @@ export default function Sidebar() {
           </div>
         )}
 
-        {hasPermission('manage_suppliers') && (
+        {hasPermission('view_suppliers') && (
           <div className="mb-1">
             <button
               onClick={() => setSuppliersOpen(!suppliersOpen)}
@@ -151,11 +151,11 @@ export default function Sidebar() {
           </div>
         )}
 
-        {hasPermission('manage_sales') && (
+        {hasPermission('view_sales') && (
           <Link href="/sales" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/sales' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><ShoppingCart className="mr-3" size={18} /> {t('sidebar', 'sales')}</Link>
         )}
 
-        {hasPermission('manage_purchases') && (
+        {hasPermission('view_purchases') && (
           <Link href="/purchases" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/purchases' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><ShoppingCart className="mr-3" size={18} /> {t('sidebar', 'purchases')}</Link>
         )}
 
@@ -164,6 +164,18 @@ export default function Sidebar() {
 
         {hasPermission('view_reports') && (
           <Link href="/reports" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/reports' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><FileBarChart className="mr-3" size={18} /> {t('sidebar', 'reports')}</Link>
+        )}
+
+        {isAdmin && (
+          <Link href="/print-templates" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname.includes('/print-templates') ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Layout className="mr-3" size={18} /> Shablonlar</Link>
+        )}
+
+        {isAdmin && (
+          <Link href="/1c-sync" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname.includes('/1c-sync') ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Server className="mr-3" size={18} /> 1C Sync</Link>
+        )}
+
+        {isAdmin && (
+          <Link href="/tenants" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname.includes('/tenants') ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Building2 className="mr-3" size={18} /> Kompaniyalar</Link>
         )}
 
         <Link href="/settings" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/settings' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Settings className="mr-3" size={18} /> {t('sidebar', 'settings')}</Link>
@@ -176,7 +188,7 @@ export default function Sidebar() {
           </div>
           <div>
             <div className="text-white dark:text-slate-200 text-sm font-bold tracking-wide">{session?.user?.name || 'User'}</div>
-            <div className="text-[10px] text-slate-500 dark:text-slate-600 tracking-wider uppercase">{(session?.user as any)?.role || 'STAFF'}</div>
+            <div className="text-[10px] text-slate-500 dark:text-slate-600 tracking-wider uppercase">{(session?.user as { role?: string })?.role || 'STAFF'}</div>
           </div>
         </div>
       </div>

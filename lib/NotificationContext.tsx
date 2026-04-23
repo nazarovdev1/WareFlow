@@ -17,10 +17,10 @@ interface NotificationContextType {
   notifications: Notification[];
   addNotification: (type: NotificationType, title: string, message: string, duration?: number) => void;
   removeNotification: (id: string) => void;
-  success: (title: string, message: string) => void;
-  error: (title: string, message: string) => void;
-  warning: (title: string, message: string) => void;
-  info: (title: string, message: string) => void;
+  success: (title: string, message?: string) => void;
+  error: (title: string, message?: string) => void;
+  warning: (title: string, message?: string) => void;
+  info: (title: string, message?: string) => void;
 }
 
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
@@ -51,20 +51,20 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
     }
   }, [removeNotification]);
 
-  const success = useCallback((title: string, message: string) => {
-    addNotification('success', title, message);
+  const success = useCallback((title: string, message?: string) => {
+    addNotification('success', title, message || title);
   }, [addNotification]);
 
-  const error = useCallback((title: string, message: string) => {
-    addNotification('error', title, message, 8000);
+  const error = useCallback((title: string, message?: string) => {
+    addNotification('error', title, message || title, 8000);
   }, [addNotification]);
 
-  const warning = useCallback((title: string, message: string) => {
-    addNotification('warning', title, message, 6000);
+  const warning = useCallback((title: string, message?: string) => {
+    addNotification('warning', title, message || title, 6000);
   }, [addNotification]);
 
-  const info = useCallback((title: string, message: string) => {
-    addNotification('info', title, message);
+  const info = useCallback((title: string, message?: string) => {
+    addNotification('info', title, message || title);
   }, [addNotification]);
 
   return (

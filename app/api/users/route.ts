@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { ALL_PERMISSIONS } from '@/lib/permissions';
 
 const CreateUserSchema = z.object({
   name: z.string().optional(),
@@ -13,6 +14,7 @@ const CreateUserSchema = z.object({
   phone: z.string().optional(),
   isActive: z.boolean().default(true),
   warehouseId: z.string().optional().nullable(),
+  permissions: z.array(z.enum(ALL_PERMISSIONS)).default([]),
 });
 
 const UpdateUserSchema = z.object({
@@ -22,6 +24,7 @@ const UpdateUserSchema = z.object({
   phone: z.string().optional(),
   isActive: z.boolean().optional(),
   warehouseId: z.string().optional().nullable(),
+  permissions: z.array(z.enum(ALL_PERMISSIONS)).optional(),
 });
 
 export async function GET(req: NextRequest) {
@@ -103,7 +106,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const { name, email, password, role, phone, isActive, warehouseId } = result.data;
+    const { name, email, password, role, phone, isActive, warehouseId, permissions } = result.data;
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
@@ -116,6 +119,7 @@ export async function POST(req: NextRequest) {
         phone,
         isActive,
         warehouseId: warehouseId || null,
+        permissions: permissions || [],
       },
       include: {
         warehouse: true,

@@ -52,7 +52,7 @@ export async function PUT(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { requestId, action, role, warehouseId, note } = body;
+    const { requestId, action, role, warehouseId, note, permissions } = body;
 
     if (!requestId || !action) {
       return NextResponse.json({ error: 'requestId va action majburiy' }, { status: 400 });
@@ -85,6 +85,7 @@ export async function PUT(req: NextRequest) {
           role: role || 'STAFF',
           warehouseId: warehouseId || request.warehouseId,
           isActive: true,
+          permissions: permissions || [],
         },
       });
 

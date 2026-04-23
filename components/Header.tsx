@@ -2,132 +2,36 @@
 
 import { Bell, Search, Settings, Check, X, User, LogOut, ChevronDown, UserPlus } from 'lucide-react';
 import Link from 'next/link';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { signOut, useSession } from 'next-auth/react';
-
-interface AppNotification {
-  id: string;
-  type: string;
-  title: string;
-  message: string;
-  link?: string | null;
-  isRead: boolean;
-  createdAt: string;
-}
+import { useNotifications, getNotificationIcon, timeAgo } from '@/hooks/useNotifications';
 
 export default function Header() {
   const { t } = useLanguage();
   const { data: session } = useSession();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
-  const isAdmin = (session?.user as any)?.role === 'ADMIN';
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Admin → AdminNotification API, User → UserNotification API
-  const apiBase = isAdmin ? '/api/notifications' : '/api/user-notifications';
-
-  const fetchNotifications = useCallback(async () => {
-    if (!session) return;
-    try {
-      const res = await fetch(`${apiBase}?limit=30`);
-      if (!res.ok) return;
-      const json = await res.json();
-      setNotifications(json.data || []);
-      setUnreadCount(json.unreadCount ?? 0);
-    } catch (e) {
-      // network xatosi — jimgina o'tkazib yuboramiz
-    }
-  }, [session, apiBase]);
-
-  // Dastlabki yuklash va 30 soniyalik polling
-  useEffect(() => {
-    if (!session) return;
-    fetchNotifications();
-    intervalRef.current = setInterval(fetchNotifications, 30000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [fetchNotifications, session]);
+  const {
+    notifications,
+    unreadCount,
+    isAdmin,
+    fetchNotifications,
+    markAsRead,
+    markAllAsRead,
+    deleteNotification,
+    clearAll,
+  } = useNotifications();
 
   const handleBellClick = () => {
     setShowNotifications(prev => !prev);
     if (!showNotifications) {
-      fetchNotifications(); // bell bosilganda ham yangilaydi
-    }
-  };
-
-  const markAsRead = async (id: string) => {
-    // Optimistic update
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
-    try {
-      const endpoint = isAdmin ? `/api/notifications/${id}` : `/api/user-notifications/${id}`;
-      await fetch(endpoint, { method: 'PATCH' });
-    } catch (e) {
-      fetchNotifications();
-    }
-  };
-
-  const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    setUnreadCount(0);
-    try {
-      const endpoint = isAdmin ? '/api/notifications/mark-all-read' : '/api/user-notifications/mark-all-read';
-      await fetch(endpoint, { method: 'PATCH' });
-    } catch (e) {
-      fetchNotifications();
-    }
-  };
-
-  const deleteNotification = async (id: string) => {
-    const n = notifications.find(n => n.id === id);
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    if (n && !n.isRead) setUnreadCount(prev => Math.max(0, prev - 1));
-    try {
-      const endpoint = isAdmin ? `/api/notifications/${id}` : `/api/user-notifications/${id}`;
-      await fetch(endpoint, { method: 'DELETE' });
-    } catch (e) {
-      fetchNotifications();
-    }
-  };
-
-  const clearAll = async () => {
-    setNotifications([]);
-    setUnreadCount(0);
-    try {
-      await fetch(apiBase, { method: 'DELETE' });
-    } catch (e) {
       fetchNotifications();
     }
   };
 
   const handleLogout = async () => {
     await signOut({ callbackUrl: '/login' });
-  };
-
-  const getNotificationIcon = (type: string) => {
-    switch (type) {
-      case 'new_user_request': return '👤';
-      case 'order': return '🛒';
-      case 'purchase': return '📦';
-      case 'stock_low': return '⚠️';
-      case 'product_transfer': return '📦';
-      case 'info': return 'ℹ️';
-      default: return '🔔';
-    }
-  };
-
-  const timeAgo = (date: string) => {
-    const seconds = Math.floor((Date.now() - new Date(date).getTime()) / 1000);
-    if (seconds < 60) return 'Hozirgina';
-    if (seconds < 3600) return `${Math.floor(seconds / 60)} daqiqa oldin`;
-    if (seconds < 86400) return `${Math.floor(seconds / 3600)} soat oldin`;
-    return `${Math.floor(seconds / 86400)} kun oldin`;
   };
 
   return (
@@ -142,7 +46,6 @@ export default function Header() {
       </div>
 
       <div className="flex items-center space-x-4">
-        {/* Notifications Bell — barcha userlar uchun */}
         <div className="relative">
           <button
             onClick={handleBellClick}
@@ -156,7 +59,6 @@ export default function Header() {
             )}
           </button>
 
-          {/* Notifications Dropdown */}
           {showNotifications && (
             <>
               <div
@@ -278,7 +180,6 @@ export default function Header() {
           )}
         </div>
 
-        {/* Settings Icon */}
         <Link
           href="/settings"
           className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-2 focus:outline-none"
@@ -286,7 +187,6 @@ export default function Header() {
           <Settings size={20} />
         </Link>
 
-        {/* Profile Menu */}
         <div className="relative">
           <button
             onClick={() => setShowProfileMenu(!showProfileMenu)}
@@ -306,7 +206,6 @@ export default function Header() {
             <ChevronDown size={16} className={`text-slate-400 transition-transform ${showProfileMenu ? 'rotate-180' : ''}`} />
           </button>
 
-          {/* Profile Dropdown */}
           {showProfileMenu && (
             <>
               <div

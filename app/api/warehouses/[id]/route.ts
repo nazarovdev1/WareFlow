@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
+import { WAREHOUSE_PERMISSIONS } from '@/lib/permissions';
 
 const UpdateSchema = z.object({
   name: z.string().min(1, "Ombor nomi majburiy").optional(),
@@ -11,6 +14,20 @@ const UpdateSchema = z.object({
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    const user = session?.user as any;
+
+    if (!user) {
+      return NextResponse.json({ error: 'Tizimga kiring' }, { status: 401 });
+    }
+
+    const isAdmin = user.role === 'ADMIN';
+    const hasPermission = isAdmin || user.permissions?.includes(WAREHOUSE_PERMISSIONS[0]);
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
+    }
+
     const { id } = await params;
     const warehouse = await prisma.warehouse.findUnique({
       where: { id },
@@ -28,6 +45,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    const user = session?.user as any;
+
+    if (!user) {
+      return NextResponse.json({ error: 'Tizimga kiring' }, { status: 401 });
+    }
+
+    const isAdmin = user.role === 'ADMIN';
+    const hasPermission = isAdmin || user.permissions?.includes(WAREHOUSE_PERMISSIONS[1]);
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
+    }
+
     const { id } = await params;
     const body = await request.json();
     const result = UpdateSchema.safeParse(body);
@@ -45,6 +76,20 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const session = await getServerSession(authOptions);
+    const user = session?.user as any;
+
+    if (!user) {
+      return NextResponse.json({ error: 'Tizimga kiring' }, { status: 401 });
+    }
+
+    const isAdmin = user.role === 'ADMIN';
+    const hasPermission = isAdmin || user.permissions?.includes(WAREHOUSE_PERMISSIONS[2]);
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
+    }
+
     const { id } = await params;
     const warehouse = await prisma.warehouse.findUnique({
       where: { id },

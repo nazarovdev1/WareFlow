@@ -12,7 +12,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const adminPhone = '998901234567';
+  const adminPhone = '+998990901818';
   const adminPassword = 'admin';
 
   const hashedPassword = await bcrypt.hash(adminPassword, 10);

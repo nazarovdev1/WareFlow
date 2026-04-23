@@ -19,8 +19,9 @@ export default function MobileNewSalePage() {
   const [cartItems, setCartItems] = useState<any[]>([]);
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(false);
-  const [paymentMethod] = useState('CASH');
-  const [discount] = useState(0);
+  const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'CARD' | 'TRANSFER'>('CASH');
+  const [discount, setDiscount] = useState(0);
+  const [showPaymentOptions, setShowPaymentOptions] = useState(false);
 
   useEffect(() => {
     Promise.all([
@@ -136,6 +137,50 @@ export default function MobileNewSalePage() {
               <option value="">Mijozsiz (Naqd)</option>
               {customers.map(c => <option key={c.id} value={c.id}>{c.fullName}</option>)}
             </select>
+          </div>
+        </div>
+
+        {/* Payment Method & Discount */}
+        <div className="bg-white dark:bg-slate-900 p-5 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-800 space-y-4">
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">To'lov turi</label>
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => setPaymentMethod('CASH')}
+                className={`py-3 rounded-2xl text-xs font-bold border-2 transition-all ${paymentMethod === 'CASH' 
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-600' 
+                  : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+              >
+                Naqd
+              </button>
+              <button
+                onClick={() => setPaymentMethod('CARD')}
+                className={`py-3 rounded-2xl text-xs font-bold border-2 transition-all ${paymentMethod === 'CARD' 
+                  ? 'bg-blue-50 border-blue-500 text-blue-600' 
+                  : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+              >
+                Karta
+              </button>
+              <button
+                onClick={() => setPaymentMethod('TRANSFER')}
+                className={`py-3 rounded-2xl text-xs font-bold border-2 transition-all ${paymentMethod === 'TRANSFER' 
+                  ? 'bg-violet-50 border-violet-500 text-violet-600' 
+                  : 'bg-slate-50 border-slate-200 text-slate-600 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-400'}`}
+              >
+                O'tkazma
+              </button>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[11px] font-black uppercase tracking-widest text-slate-400">Chegirma ($)</label>
+            <input
+              type="number"
+              min="0"
+              value={discount}
+              onChange={e => setDiscount(Number(e.target.value) || 0)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700 rounded-2xl px-4 py-3 text-sm focus:ring-2 focus:ring-indigo-500/20 outline-none text-slate-800 dark:text-white"
+              placeholder="0.00"
+            />
           </div>
         </div>
 

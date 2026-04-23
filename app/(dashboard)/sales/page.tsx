@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Plus, Trash2, Search, ShoppingCart, User, MapPin, CreditCard, Tag, Package, Eye, X, FileText, Download, TrendingUp, Users, DollarSign, BarChart3, ArrowUpDown } from 'lucide-react';
+import { Plus, Trash2, Search, ShoppingCart, User, MapPin, CreditCard, Tag, Package, Eye, X, FileText, Download, TrendingUp, Users, DollarSign, BarChart3, ArrowUpDown, Printer } from 'lucide-react';
+import { InvoicePrintButton } from '@/components/InvoiceTemplate';
 import { useNotification } from '@/lib/NotificationContext';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell } from 'recharts';
@@ -39,8 +40,13 @@ export default function SalesPage() {
   const [filterSearch, setFilterSearch] = useState('');
   const [filterWarehouse, setFilterWarehouse] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
+  const [orderDetailLoading, setOrderDetailLoading] = useState(false);
   const [cancelModal, setCancelModal] = useState(false);
   const [cancelLoading, setCancelLoading] = useState(false);
+  const [returnModal, setReturnModal] = useState(false);
+  const [returnLoading, setReturnLoading] = useState(false);
+  const [returnItems, setReturnItems] = useState<any[]>([]);
+  const [returnReason, setReturnReason] = useState('');
 
   // ─── ANALYTICS STATE ──────────────────────────────
   const [analytics, setAnalytics] = useState<any | null>(null);
@@ -96,6 +102,25 @@ export default function SalesPage() {
         .finally(() => setAnalyticsLoading(false));
     }
   }, [activeTab, analyticsPeriod]);
+
+  // Fetch order detail
+  const fetchOrderDetail = async (orderId: string) => {
+    setOrderDetailLoading(true);
+    try {
+      const res = await fetch(`/api/orders/${orderId}`);
+      if (res.ok) {
+        const order = await res.json();
+        setSelectedOrder(order);
+      } else {
+        error('Buyurtma ma\'lumotlarini olishda xatolik');
+      }
+    } catch (err) {
+      console.error('Order detail error:', err);
+      error('Buyurtma ma\'lumotlarini olishda xatolik');
+    } finally {
+      setOrderDetailLoading(false);
+    }
+  };
 
   // Filter products
   const filteredProducts = products.filter(p =>
@@ -179,6 +204,39 @@ export default function SalesPage() {
     } catch {
       error(t('messages', 'error'), 'Buyurtmani bekor qilishda xatolik');
     } finally { setCancelLoading(false); }
+  };
+
+  // Return order
+  const handleReturnOrder = async () => {
+    if (!selectedOrder || returnItems.length === 0) {
+      error('Xatolik', 'Qaytariladigan mahsulotlarni tanlang');
+      return;
+    }
+    setReturnLoading(true);
+    try {
+      const res = await fetch(`/api/orders/${selectedOrder.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          status: 'RETURNED',
+          returnItems: returnItems.map(item => ({
+            productId: item.productId,
+            quantity: item.returnQuantity,
+            price: item.price,
+          })),
+          returnReason,
+        }),
+      });
+      if (!res.ok) throw new Error();
+      success('Muvaffaqiyatli', 'Buyurtma qaytarildi');
+      setReturnModal(false);
+      setReturnItems([]);
+      setReturnReason('');
+      setSelectedOrder(null);
+      fetchOrders(ordersPage);
+    } catch {
+      error(t('messages', 'error'), 'Buyurtmani qaytarishda xatolik');
+    } finally { setReturnLoading(false); }
   };
 
   // Tab styling
@@ -421,12 +479,12 @@ export default function SalesPage() {
                     </td>
                     <td className="px-6 py-4 text-center">
                       <div className="flex items-center justify-center gap-1">
-                        <button onClick={() => setSelectedOrder(order)}
+                        <button onClick={() => fetchOrderDetail(order.id)}
                           className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-500/20 rounded-lg transition-colors" title="Ko'rish">
                           <Eye size={16} />
                         </button>
                         {order.status === 'COMPLETED' && (
-                          <button onClick={() => { setSelectedOrder(order); setCancelModal(true); }}
+                          <button onClick={() => { fetchOrderDetail(order.id); setCancelModal(true); }}
                             className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/20 rounded-lg transition-colors" title="Bekor qilish">
                             <X size={16} />
                           </button>
@@ -563,9 +621,15 @@ export default function SalesPage() {
           <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setSelectedOrder(null)} />
           <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[60] w-full max-w-lg max-h-[80vh] overflow-hidden">
             <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">{selectedOrder.docNumber}</h3>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">{orderDetailLoading ? 'Yuklanmoqda...' : selectedOrder.docNumber}</h3>
               <button onClick={() => setSelectedOrder(null)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={18} /></button>
             </div>
+            {orderDetailLoading ? (
+              <div className="p-6 flex items-center justify-center">
+                <div className="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full" />
+              </div>
+            ) : (
+            <>
             <div className="p-6 overflow-y-auto max-h-[60vh] space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div><div className="text-xs font-bold text-slate-500 uppercase mb-1">Mijoz</div><div className="font-bold text-slate-800 dark:text-white">{selectedOrder.customer?.fullName || 'Mijozsiz'}</div></div>
@@ -586,14 +650,23 @@ export default function SalesPage() {
               </div>
             </div>
             <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900">
+              <InvoicePrintButton order={selectedOrder} />
               {selectedOrder.status === 'COMPLETED' && (
-                <button onClick={() => { setCancelModal(true); }}
-                  className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors">
-                  Bekor qilish
-                </button>
+                <>
+                  <button onClick={() => { setReturnModal(true); }}
+                    className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-bold rounded-lg transition-colors">
+                    Qaytarish
+                  </button>
+                  <button onClick={() => { setCancelModal(true); }}
+                    className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition-colors">
+                    Bekor qilish
+                  </button>
+                </>
               )}
               <button onClick={() => setSelectedOrder(null)} className="px-5 py-2.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-sm font-bold rounded-lg hover:bg-slate-50">Yopish</button>
             </div>
+            </>
+            )}
           </div>
         </>
       )}
@@ -614,6 +687,84 @@ export default function SalesPage() {
               <button onClick={handleCancelOrder} disabled={cancelLoading}
                 className="px-5 py-2.5 bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg">
                 {cancelLoading ? 'Bekor qilinmoqda...' : 'Ha, bekor qilish'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ─── RETURN MODAL ─── */}
+      {returnModal && selectedOrder && (
+        <>
+          <div className="fixed inset-0 bg-black/40 z-50" onClick={() => setReturnModal(false)} />
+          <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[80] w-full max-w-2xl max-h-[90vh] overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Mahsulotlarni qaytarish - {selectedOrder.docNumber}</h3>
+              <button onClick={() => setReturnModal(false)} className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg"><X size={18} /></button>
+            </div>
+            <div className="p-6 overflow-y-auto max-h-[60vh]">
+              <div className="space-y-3">
+                {selectedOrder.items?.map((item: any) => (
+                  <div key={item.id} className="p-4 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex-1">
+                        <div className="font-bold text-slate-800 dark:text-white">{item.product?.name}</div>
+                        <div className="text-xs text-slate-500">{item.quantity} × ${item.price}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-black text-slate-900 dark:text-white">${Number(item.total).toLocaleString()}</div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <label className="text-sm font-semibold text-slate-600 dark:text-slate-300">Qaytariladigan miqdor:</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max={item.quantity}
+                        defaultValue={item.quantity}
+                        onChange={(e) => {
+                          const qty = Math.min(Number(e.target.value), item.quantity);
+                          setReturnItems(prev => {
+                            const existing = prev.find(i => i.productId === item.productId);
+                            if (existing) {
+                              return prev.map(i => 
+                                i.productId === item.productId 
+                                  ? { ...i, returnQuantity: qty }
+                                  : i
+                              );
+                            }
+                            return [...prev, {
+                              productId: item.productId,
+                              productName: item.product?.name,
+                              price: item.price,
+                              quantity: item.quantity,
+                              returnQuantity: qty,
+                            }];
+                          });
+                        }}
+                        className="w-24 px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-200"
+                      />
+                      <span className="text-xs text-slate-500">/ {item.quantity} dona</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-4">
+                <label className="block text-sm font-semibold text-slate-600 dark:text-slate-300 mb-2">Qaytarish sababi (ixtiyoriy):</label>
+                <textarea
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  placeholder="Qaytarish sababini yozing..."
+                  rows={3}
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded-lg text-sm text-slate-800 dark:text-slate-200"
+                />
+              </div>
+            </div>
+            <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900">
+              <button onClick={() => setReturnModal(false)} className="px-5 py-2.5 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-lg">Bekor qilish</button>
+              <button onClick={handleReturnOrder} disabled={returnLoading || returnItems.length === 0}
+                className="px-5 py-2.5 bg-amber-600 hover:bg-amber-700 disabled:opacity-50 text-white text-sm font-bold rounded-lg">
+                {returnLoading ? 'Qaytarilmoqda...' : 'Qaytarish'}
               </button>
             </div>
           </div>

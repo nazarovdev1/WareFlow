@@ -2,21 +2,35 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { WAREHOUSE_PERMISSIONS } from '@/lib/permissions';
 
 // GET /api/stock — Stock entries with product info, filterable by warehouse
 // GET /api/stock?allWarehouses=true — Stock across all warehouses (for checking availability)
 export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    const userRole = (session?.user as any)?.role;
-    const userWarehouseId = (session?.user as any)?.warehouseId;
+    const user = session?.user as any;
+
+    if (!user) {
+      return NextResponse.json({ error: 'Tizimga kiring' }, { status: 401 });
+    }
+
+    const isAdmin = user.role === 'ADMIN';
+    const hasPermission = isAdmin || user.permissions?.includes(WAREHOUSE_PERMISSIONS[0]);
+
+    if (!hasPermission) {
+      return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
+    }
+
+    const userRole = user.role;
+    const userWarehouseId = user.warehouseId;
     const { searchParams } = new URL(req.url);
     const warehouseId = searchParams.get('warehouseId');
     const allWarehouses = searchParams.get('allWarehouses') === 'true';
     const search = searchParams.get('search') || '';
 
     const where: any = {};
-    
+
     // Non-admin users can only see their own warehouse
     if (userRole !== 'ADMIN') {
       if (warehouseId) {

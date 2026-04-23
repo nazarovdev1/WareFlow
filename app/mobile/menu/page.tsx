@@ -4,7 +4,7 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useSession, signOut } from 'next-auth/react';
 import { User, LogOut, Lock, Edit3, Check, X, Save, Moon, Globe, CreditCard, Shield, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileMenuPage() {
@@ -22,11 +22,11 @@ export default function MobileMenuPage() {
 
   const [darkMode, setDarkMode] = useState(false);
 
-  useState(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined') {
       setDarkMode(document.documentElement.classList.contains('dark'));
     }
-  });
+  }, []);
 
   const handleSaveProfile = async () => {
     setSavingProfile(true);
