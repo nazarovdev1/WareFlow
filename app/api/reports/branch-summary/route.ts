@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { checkPermission } from '@/lib/checkPermission';
+import { OrderStatus, PurchaseStatus } from '@prisma/client';
 
 const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
   try { return await fn(); } catch { return fallback; }
@@ -53,14 +54,14 @@ export async function GET(request: Request) {
     const orderWhere = {
       ...companyFilter,
       ...branchFilter,
-      status: 'COMPLETED',
+      status: OrderStatus.COMPLETED,
       ...dateFilter,
     };
 
     const purchaseWhere = {
       ...companyFilter,
       ...branchFilter,
-      status: 'COMPLETED',
+      status: PurchaseStatus.COMPLETED,
       ...dateFilter,
     };
 

@@ -82,9 +82,9 @@ export function RouteMap({ origin, stops, height = '400px', className = '' }: Ro
     // Add stop markers and route lines
     if (stops.length > 0) {
       const routePoints: [number, number][] = [
-        [origin.latitude, origin.longitude],
-        ...stops.map(s => [s.latitude, s.longitude]),
-        [origin.latitude, origin.longitude], // Return to warehouse
+        [origin.latitude, origin.longitude] as [number, number],
+        ...stops.map(s => [s.latitude, s.longitude] as [number, number]),
+        [origin.latitude, origin.longitude] as [number, number], // Return to warehouse
       ];
 
       // Draw route line

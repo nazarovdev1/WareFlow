@@ -45,7 +45,13 @@ export async function GET(req: NextRequest) {
       where: { isActive: true },
     });
 
-    let tierInfo = null;
+    let tierInfo: {
+      tier: string;
+      pointsToNextTier: number | null;
+      nextTier: string | null;
+      discountRate: number;
+    } | null = null;
+
     if (loyaltyProgram) {
       tierInfo = {
         tier: loyaltyAccount.tier,
