@@ -16,10 +16,10 @@ const CustomerSchema = z.object({
 });
 
 
-// GET /api/customers — List customers with filters
+// GET /api/customers — List customers with filters (company filtered)
 export async function GET(req: NextRequest) {
   try {
-    const { error } = await checkPermission('view_customers');
+    const { error, user } = await checkPermission('view_customers');
     if (error) return error;
 
     const { searchParams } = new URL(req.url);
@@ -33,8 +33,15 @@ export async function GET(req: NextRequest) {
 
     const isDebtor = searchParams.get('isDebtor') === 'true';
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const andConditions: any[] = [];
+
+    // Company isolation
+    if (user.role !== 'SUPER_ADMIN' && user.companyId) {
+      where.companyId = user.companyId;
+    }
 
     if (search) {
       andConditions.push({
@@ -89,16 +96,16 @@ export async function GET(req: NextRequest) {
         totalBalanceUZS: stats._sum.balanceUZS || 0,
       },
     });
-  } catch (error) {
-    console.error('GET /api/customers error:', error);
+  } catch {
+    console.error('GET /api/customers error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST /api/customers
+// POST /api/customers (company isolated)
 export async function POST(req: NextRequest) {
   try {
-    const { error } = await checkPermission('create_customers');
+    const { error, user } = await checkPermission('create_customers');
     if (error) return error;
 
     const body = await req.json();
@@ -108,7 +115,7 @@ export async function POST(req: NextRequest) {
     if (!result.success) {
       return NextResponse.json({ 
         error: 'Validatsiya xatosi', 
-        details: result.error.issues.map(e => e.message) 
+        details: result.error.issues.map((e: { message: string }) => e.message) 
       }, { status: 400 });
     }
 
@@ -133,12 +140,13 @@ export async function POST(req: NextRequest) {
         groupId: groupId || null,
         balanceUSD,
         balanceUZS,
+        companyId: user.companyId || null,
       },
       include: { group: true },
     });
     return NextResponse.json(customer, { status: 201 });
-  } catch (error) {
-    console.error('POST /api/customers error:', error);
+  } catch {
+    console.error('POST /api/customers error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

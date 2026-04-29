@@ -23,10 +23,10 @@ const ProductSchema = z.object({
 });
 
 
-// GET /api/products — List products with search, category filter, pagination
+// GET /api/products — List products with search, category filter, pagination (company filtered)
 export async function GET(req: NextRequest) {
   try {
-    const { error } = await checkPermission('view_products');
+    const { error, user } = await checkPermission('view_products');
     if (error) return error;
 
     const { searchParams } = new URL(req.url);
@@ -36,7 +36,12 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '25');
     const skip = (page - 1) * limit;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
+    // Company isolation
+    if (user.role !== 'SUPER_ADMIN' && user.companyId) {
+      where.companyId = user.companyId;
+    }
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -75,16 +80,16 @@ export async function GET(req: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    console.error('GET /api/products error:', error);
+  } catch {
+    console.error('GET /api/products error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST /api/products — Create a new product (with optional initial stock)
+// POST /api/products — Create a new product (with optional initial stock, company isolated)
 export async function POST(req: NextRequest) {
   try {
-    const { error } = await checkPermission('create_products');
+    const { error, user } = await checkPermission('create_products');
     if (error) return error;
 
     const body = await req.json();
@@ -94,7 +99,7 @@ export async function POST(req: NextRequest) {
     if (!result.success) {
       return NextResponse.json({ 
         error: 'Validatsiya xatosi', 
-        details: result.error.issues.map(e => e.message) 
+        details: result.error.issues.map((e: { message: string }) => e.message) 
       }, { status: 400 });
     }
 
@@ -126,6 +131,7 @@ export async function POST(req: NextRequest) {
         categoryId,
         folderId,
         unitId,
+        companyId: user.companyId || null,
       },
     });
 
@@ -152,9 +158,10 @@ export async function POST(req: NextRequest) {
     });
 
     return NextResponse.json(fullProduct, { status: 201 });
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const err = error as { code?: string };
     console.error('POST /api/products error:', error);
-    if (error.code === 'P2002') {
+    if (err.code === 'P2002') {
       return NextResponse.json({ error: 'SKU yoki shtrix-kod allaqachon mavjud' }, { status: 409 });
     }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

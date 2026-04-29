@@ -11,6 +11,8 @@ interface ExtendedUser extends User {
   phone?: string | null;
   role: UserRole;
   warehouseId?: string | null;
+  companyId?: string | null;
+  branchId?: string | null;
   permissions: string[];
 }
 
@@ -57,6 +59,8 @@ export const authOptions: NextAuthOptions = {
           phone: user.phone,
           role: user.role,
           warehouseId: user.warehouseId,
+          companyId: user.companyId,
+          branchId: user.branchId,
           permissions: user.permissions || [],
         } as ExtendedUser;
       },
@@ -69,6 +73,8 @@ export const authOptions: NextAuthOptions = {
         token.id = extendedUser.id;
         token.role = extendedUser.role;
         token.warehouseId = extendedUser.warehouseId;
+        token.companyId = extendedUser.companyId;
+        token.branchId = extendedUser.branchId;
         token.permissions = extendedUser.permissions || [];
       }
       return token;
@@ -78,6 +84,8 @@ export const authOptions: NextAuthOptions = {
         session.user.id = token.id as string;
         session.user.role = token.role as UserRole;
         session.user.warehouseId = token.warehouseId as string | undefined;
+        (session.user as any).companyId = token.companyId as string | undefined;
+        (session.user as any).branchId = token.branchId as string | undefined;
         session.user.permissions = (token.permissions as string[]) || [];
       }
       return session;

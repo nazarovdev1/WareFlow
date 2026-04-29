@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getToken } from 'next-auth/jwt';
 
-async function checkSuperAdmin(req: Request) {
+async function checkAdmin(req: Request) {
   const token = await getToken({ req });
   if (!token) return null;
   const role = (token as any).role;
@@ -13,7 +13,7 @@ async function checkSuperAdmin(req: Request) {
 
 export async function GET(req: Request) {
   try {
-    const admin = await checkSuperAdmin(req);
+    const admin = await checkAdmin(req);
     if (!admin) {
       return NextResponse.json({ error: 'Super admin access required' }, { status: 403 });
     }
@@ -39,7 +39,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const admin = await checkSuperAdmin(req);
+    const admin = await checkAdmin(req);
     if (!admin) {
       return NextResponse.json({ error: 'Super admin access required' }, { status: 403 });
     }

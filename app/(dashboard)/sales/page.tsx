@@ -153,6 +153,10 @@ export default function SalesPage() {
     if (quantity < 1) return;
     setCartItems(cartItems.map(item => item.productId === productId ? { ...item, quantity } : item));
   };
+  const updatePrice = (productId: string, price: number) => {
+    if (price < 0) return;
+    setCartItems(cartItems.map(item => item.productId === productId ? { ...item, price } : item));
+  };
 
   const subtotal = cartItems.reduce((sum, item) => sum + (item.quantity * item.price), 0);
   const finalAmount = subtotal - discount;
@@ -350,9 +354,13 @@ export default function SalesPage() {
                           <button onClick={() => updateQuantity(item.productId, item.quantity + 1)}
                             className="w-8 h-8 bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded-lg flex items-center justify-center hover:bg-slate-100">+</button>
                         </div>
-                        <div className="text-right min-w-[80px]">
+                        <div className="text-right min-w-[100px]">
                           <div className="text-sm font-bold text-slate-800 dark:text-slate-200">${(item.quantity * item.price).toLocaleString()}</div>
-                          <div className="text-xs text-slate-500">${item.price}/dona</div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <span className="text-xs text-slate-500">$</span>
+                            <input type="number" value={item.price} onChange={e => updatePrice(item.productId, parseFloat(e.target.value) || 0)}
+                              className="w-16 text-center bg-white dark:bg-slate-600 border border-slate-200 dark:border-slate-500 rounded py-0.5 text-xs text-slate-800 dark:text-slate-200" />
+                          </div>
                         </div>
                         <button onClick={() => removeFromCart(item.productId)} className="text-red-500 hover:text-red-600 p-1"><Trash2 size={16} /></button>
                       </div>

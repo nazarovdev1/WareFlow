@@ -17,10 +17,10 @@ const OrderSchema = z.object({
   })).min(1, 'Kamida bitta mahsulot bo\'lishi kerak'),
 });
 
-// GET /api/orders — List all orders
+// GET /api/orders — List all orders (company + branch filtered)
 export async function GET(request: Request) {
   try {
-    const { error } = await checkPermission('view_sales');
+    const { error, user } = await checkPermission('view_sales');
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -30,8 +30,21 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const customerId = searchParams.get('customerId');
     const warehouseId = searchParams.get('warehouseId');
+    const branchId = searchParams.get('branchId');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
+    // Company isolation
+    if (user.role !== 'SUPER_ADMIN' && user.companyId) {
+      where.companyId = user.companyId;
+    }
+    // Branch filter: from selector or user's own branch
+    if (branchId) {
+      where.branchId = branchId;
+    } else if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.branchId) {
+      where.branchId = user.branchId;
+    }
+
     if (status) where.status = status;
     if (customerId) where.customerId = customerId;
     if (warehouseId) where.warehouseId = warehouseId;
@@ -49,10 +62,10 @@ export async function GET(request: Request) {
         include: {
           customer: { select: { fullName: true, phone: true } },
           warehouse: { select: { name: true } },
+          branch: { select: { id: true, name: true } },
           items: {
             include: {
               product: { select: { name: true, sku: true } },
-              batch: { select: { id: true, batchNumber: true, expiryDate: true } },
               batch: { select: { id: true, batchNumber: true, expiryDate: true } },
             },
           },
@@ -73,16 +86,16 @@ export async function GET(request: Request) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    console.error('GET /api/orders error:', error);
+  } catch {
+    console.error('GET /api/orders error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST /api/orders — Create new order
+// POST /api/orders — Create new order (company + branch isolated)
 export async function POST(request: Request) {
   try {
-    const { error } = await checkPermission('create_sales');
+    const { error, user } = await checkPermission('create_sales');
     if (error) return error;
 
     const body = await request.json();
@@ -96,6 +109,12 @@ export async function POST(request: Request) {
     }
 
     const { customerId, warehouseId, discount, paymentMethod, notes, items } = result.data;
+
+    // Determine branchId from warehouse
+    const warehouse = await prisma.warehouse.findUnique({
+      where: { id: warehouseId },
+      select: { branchId: true, companyId: true },
+    });
 
     // Generate document number
     const count = await prisma.order.count();
@@ -122,6 +141,8 @@ export async function POST(request: Request) {
           paymentMethod: paymentMethod || null,
           notes: notes || null,
           status: 'COMPLETED',
+          companyId: user.companyId || warehouse?.companyId || null,
+          branchId: warehouse?.branchId || user.branchId || null,
           items: {
             create: items.map(item => ({
               productId: item.productId,
@@ -139,7 +160,6 @@ export async function POST(request: Request) {
             include: {
               product: { select: { name: true, sku: true } },
               batch: { select: { id: true, batchNumber: true, expiryDate: true } },
-              batch: { select: { id: true, batchNumber: true, expiryDate: true } },
             },
           },
         },
@@ -149,7 +169,6 @@ export async function POST(request: Request) {
       for (const item of items) {
         // If batchId is specified, use that specific batch
         if (item.batchId) {
-          // Update batch quantity
           const batch = await tx.productBatch.findUnique({
             where: { id: item.batchId },
           });
@@ -171,7 +190,7 @@ export async function POST(request: Request) {
         } else {
           // FIFO: Find earliest batch with expiry date, or earliest created
           let remainingQty = item.quantity;
-          let usedBatches: string[] = [];
+          const usedBatches: string[] = [];
 
           while (remainingQty > 0) {
             const batch = await tx.productBatch.findFirst({
@@ -187,8 +206,8 @@ export async function POST(request: Request) {
                 ],
               },
               orderBy: [
-                { expiryDate: 'asc' }, // FEFO: First expiring first
-                { createdAt: 'asc' }, // FIFO: First created first
+                { expiryDate: 'asc' },
+                { createdAt: 'asc' },
               ],
             });
 
@@ -239,7 +258,6 @@ export async function POST(request: Request) {
         });
 
         if (customer?.loyaltyAccount?.isActive) {
-          // Get loyalty program settings
           const loyaltyProgram = await tx.loyaltyProgram.findFirst({
             where: { isActive: true },
           });
@@ -247,7 +265,6 @@ export async function POST(request: Request) {
           if (loyaltyProgram) {
             const pointsEarned = Math.floor(finalAmount * loyaltyProgram.pointsPerDollar);
 
-            // Update loyalty account
             await tx.loyaltyAccount.update({
               where: { customerId },
               data: {
@@ -256,7 +273,6 @@ export async function POST(request: Request) {
               },
             });
 
-            // Create loyalty transaction
             await tx.loyaltyTransaction.create({
               data: {
                 accountId: customer.loyaltyAccount.id,
@@ -267,7 +283,6 @@ export async function POST(request: Request) {
               },
             });
 
-            // Check and update tier
             const updatedAccount = await tx.loyaltyAccount.findUnique({
               where: { customerId },
             });

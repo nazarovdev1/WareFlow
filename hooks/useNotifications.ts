@@ -1,91 +1,173 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { useSession } from 'next-auth/react';
+'use client';
 
-export interface AppNotification {
+import { useEffect, useRef, useCallback, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import { useNotification as useToast } from '@/lib/NotificationContext';
+
+// ========== Types ==========
+
+export interface NotificationItem {
   id: string;
-  type: string;
   title: string;
   message: string;
-  link?: string | null;
+  type: string;
   isRead: boolean;
-  createdAt: string | Date;
+  link?: string | null;
+  createdAt: string;
 }
+
+interface SseNotification {
+  type: 'stock_alert' | 'order' | 'info' | 'warning' | 'connected';
+  title: string;
+  message: string;
+  link?: string;
+  data?: Record<string, unknown>;
+  timestamp: string;
+}
+
+// ========== Helper functions ==========
+
+export function getNotificationIcon(type: string) {
+  switch (type) {
+    case 'stock_alert':
+    case 'stock_low':
+    case 'warning':
+      return '⚠️';
+    case 'order':
+    case 'success':
+      return '✅';
+    case 'info':
+      return 'ℹ️';
+    case 'error':
+      return '❌';
+    case 'request':
+      return '📩';
+    case 'message':
+      return '💬';
+    default:
+      return '🔔';
+  }
+}
+
+export function timeAgo(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const seconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+  if (seconds < 60) return 'Hozirgina';
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} daqiqa oldin`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} soat oldin`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days} kun oldin`;
+  const months = Math.floor(days / 30);
+  if (months < 12) return `${months} oy oldin`;
+  const years = Math.floor(months / 12);
+  return `${years} yil oldin`;
+}
+
+// ========== Legacy useNotifications hook (Header.tsx compatibility) ==========
 
 export function useNotifications() {
   const { data: session } = useSession();
-  const [notifications, setNotifications] = useState<AppNotification[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const isAdmin = session?.user?.role === 'ADMIN';
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
-  const apiBase = isAdmin ? '/api/notifications' : '/api/user-notifications';
-
-  const fetchNotifications = useCallback(async () => {
-    if (!session) return;
-    try {
-      const res = await fetch(`${apiBase}?limit=30`);
-      if (!res.ok) return;
-      const json = await res.json();
-      setNotifications(json.data || []);
-      setUnreadCount(json.unreadCount ?? 0);
-    } catch (e) {
-    }
-  }, [session, apiBase]);
+  const userRole = (session?.user as any)?.role;
+  const isAdminUser = userRole === 'ADMIN';
 
   useEffect(() => {
-    if (!session) return;
-    fetchNotifications();
-    intervalRef.current = setInterval(fetchNotifications, 30000);
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [fetchNotifications, session]);
+    setIsAdmin(isAdminUser);
+  }, [isAdminUser]);
 
-  const markAsRead = async (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => n.id === id ? { ...n, isRead: true } : n)
-    );
-    setUnreadCount(prev => Math.max(0, prev - 1));
+  const endpointBase = isAdminUser ? '/api/notifications' : '/api/user-notifications';
+
+  const fetchNotifications = useCallback(async () => {
     try {
-      const endpoint = isAdmin ? `/api/notifications/${id}` : `/api/user-notifications/${id}`;
-      await fetch(endpoint, { method: 'PATCH' });
-    } catch (e) {
+      const res = await fetch(endpointBase);
+      if (!res.ok) throw new Error('Fetch failed');
+      const json = await res.json();
+      setNotifications(json.data || []);
+      setUnreadCount(json.unreadCount || 0);
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+    }
+  }, [endpointBase]);
+
+  // Auto-fetch on mount
+  useEffect(() => {
+    if (session) {
       fetchNotifications();
     }
-  };
+  }, [session, fetchNotifications]);
 
-  const markAllAsRead = async () => {
-    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
-    setUnreadCount(0);
-    try {
-      const endpoint = isAdmin ? '/api/notifications/mark-all-read' : '/api/user-notifications/mark-all-read';
-      await fetch(endpoint, { method: 'PATCH' });
-    } catch (e) {
-      fetchNotifications();
-    }
-  };
+  const markAsRead = useCallback(
+    async (id: string) => {
+      try {
+        const res = await fetch(`${endpointBase}/${id}`, { method: 'PATCH' });
+        if (!res.ok) throw new Error('PATCH failed');
 
-  const deleteNotification = async (id: string) => {
-    const n = notifications.find(n => n.id === id);
-    setNotifications(prev => prev.filter(n => n.id !== id));
-    if (n && !n.isRead) setUnreadCount(prev => Math.max(0, prev - 1));
-    try {
-      const endpoint = isAdmin ? `/api/notifications/${id}` : `/api/user-notifications/${id}`;
-      await fetch(endpoint, { method: 'DELETE' });
-    } catch (e) {
-      fetchNotifications();
-    }
-  };
+        let wasUnread = false;
+        setNotifications(prev => {
+          const target = prev.find(n => n.id === id);
+          wasUnread = target ? !target.isRead : false;
+          return prev.map(n => (n.id === id ? { ...n, isRead: true } : n));
+        });
+        if (wasUnread) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      } catch (err) {
+        console.error('Error marking as read:', err);
+      }
+    },
+    [endpointBase]
+  );
 
-  const clearAll = async () => {
-    setNotifications([]);
-    setUnreadCount(0);
+  const markAllAsRead = useCallback(async () => {
     try {
-      await fetch(apiBase, { method: 'DELETE' });
-    } catch (e) {
-      fetchNotifications();
+      const res = await fetch(`${endpointBase}/mark-all-read`, { method: 'PATCH' });
+      if (!res.ok) throw new Error('PATCH failed');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Error marking all as read:', err);
     }
-  };
+  }, [endpointBase]);
+
+  const deleteNotification = useCallback(
+    async (id: string) => {
+      try {
+        const res = await fetch(`${endpointBase}/${id}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error('DELETE failed');
+
+        let wasUnread = false;
+        setNotifications(prev => {
+          const target = prev.find(n => n.id === id);
+          wasUnread = target ? !target.isRead : false;
+          return prev.filter(n => n.id !== id);
+        });
+        if (wasUnread) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
+      } catch (err) {
+        console.error('Error deleting notification:', err);
+      }
+    },
+    [endpointBase]
+  );
+
+  const clearAll = useCallback(async () => {
+    try {
+      const res = await fetch(endpointBase, { method: 'DELETE' });
+      if (!res.ok) throw new Error('DELETE failed');
+      setNotifications([]);
+      setUnreadCount(0);
+    } catch (err) {
+      console.error('Error clearing notifications:', err);
+    }
+  }, [endpointBase]);
 
   return {
     notifications,
@@ -99,23 +181,87 @@ export function useNotifications() {
   };
 }
 
-export function getNotificationIcon(type: string): string {
-  switch (type) {
-    case 'new_user_request': return '👤';
-    case 'order': return '🛒';
-    case 'purchase': return '📦';
-    case 'stock_low': return '⚠️';
-    case 'product_transfer': return '📦';
-    case 'info': return 'ℹ️';
-    default: return '🔔';
-  }
-}
+// ========== Real-time SSE notifications hook ==========
 
-export function timeAgo(date: string | Date): string {
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  const seconds = Math.floor((Date.now() - dateObj.getTime()) / 1000);
-  if (seconds < 60) return 'Hozirgina';
-  if (seconds < 3600) return `${Math.floor(seconds / 60)} daqiqa oldin`;
-  if (seconds < 86400) return `${Math.floor(seconds / 3600)} soat oldin`;
-  return `${Math.floor(seconds / 86400)} kun oldin`;
+export function useRealtimeNotifications() {
+  const { success, error, warning, info } = useToast();
+  const [isConnected, setIsConnected] = useState(false);
+  const eventSourceRef = useRef<EventSource | null>(null);
+
+  const connect = useCallback(() => {
+    if (eventSourceRef.current?.readyState === EventSource.OPEN) return;
+
+    const es = new EventSource('/api/notifications/sse');
+    eventSourceRef.current = es;
+
+    es.onopen = () => {
+      setIsConnected(true);
+    };
+
+    es.onmessage = (event) => {
+      try {
+        const data: SseNotification = JSON.parse(event.data);
+
+        if (data.type === 'connected') return;
+
+        // Show toast based on notification type
+        switch (data.type) {
+          case 'stock_alert':
+            warning(data.title, data.message);
+            break;
+          case 'order':
+            success(data.title, data.message);
+            break;
+          case 'warning':
+            warning(data.title, data.message);
+            break;
+          case 'info':
+            info(data.title, data.message);
+            break;
+          default:
+            info(data.title, data.message);
+        }
+
+        // Browser notification (if permitted)
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          new Notification(data.title, {
+            body: data.message,
+            icon: '/favicon.ico',
+          });
+        }
+      } catch {
+        // Ignore parse errors (e.g., ping messages)
+      }
+    };
+
+    es.onerror = () => {
+      setIsConnected(false);
+      es.close();
+      // Reconnect after 5 seconds
+      setTimeout(() => {
+        connect();
+      }, 5000);
+    };
+  }, [success, error, warning, info]);
+
+  const disconnect = useCallback(() => {
+    eventSourceRef.current?.close();
+    eventSourceRef.current = null;
+    setIsConnected(false);
+  }, []);
+
+  useEffect(() => {
+    // Request browser notification permission
+    if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
+    connect();
+
+    return () => {
+      disconnect();
+    };
+  }, [connect, disconnect]);
+
+  return { isConnected };
 }

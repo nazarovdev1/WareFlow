@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { checkPermission } from '@/lib/checkPermission';
 
-// GET /api/suppliers
+// GET /api/suppliers (company filtered)
 export async function GET(req: NextRequest) {
   try {
-    const { error } = await checkPermission('view_suppliers');
+    const { error, user } = await checkPermission('view_suppliers');
     if (error) return error;
 
     const { searchParams } = new URL(req.url);
@@ -16,7 +16,11 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '25');
     const skip = (page - 1) * limit;
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
+    if (user.role !== 'SUPER_ADMIN' && user.companyId) {
+      where.companyId = user.companyId;
+    }
     if (search) {
       where.OR = [
         { name: { contains: search, mode: 'insensitive' } },
@@ -41,15 +45,15 @@ export async function GET(req: NextRequest) {
       data: suppliers,
       pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
     });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST /api/suppliers
+// POST /api/suppliers (company isolated)
 export async function POST(req: NextRequest) {
   try {
-    const { error } = await checkPermission('create_suppliers');
+    const { error, user } = await checkPermission('create_suppliers');
     if (error) return error;
 
     const body = await req.json();
@@ -63,10 +67,11 @@ export async function POST(req: NextRequest) {
         phone: body.phone || null,
         category: body.category || null,
         status: body.status || 'ACTIVE',
+        companyId: user.companyId || null,
       },
     });
     return NextResponse.json(supplier, { status: 201 });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

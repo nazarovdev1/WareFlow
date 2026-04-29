@@ -56,6 +56,9 @@ export default function SettingsPage() {
   const [stockThresholds, setStockThresholds] = useState<any[]>([]);
   const [stockLoading, setStockLoading] = useState(false);
   const [newThreshold, setNewThreshold] = useState({ productId: '', warehouseId: '', minStock: 0 });
+  const [products, setProducts] = useState<any[]>([]);
+  const [warehouses, setWarehouses] = useState<any[]>([]);
+  const [stockDataLoading, setStockDataLoading] = useState(false);
 
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [activityLoading, setActivityLoading] = useState(false);
@@ -96,6 +99,8 @@ export default function SettingsPage() {
   useEffect(() => {
     if (activeTab === 'stock') {
       loadStockThresholds();
+      loadProducts();
+      loadWarehouses();
     }
     if (activeTab === 'activity') {
       loadActivityLogs();
@@ -158,6 +163,36 @@ export default function SettingsPage() {
     }
   };
 
+  const loadProducts = async () => {
+    setStockDataLoading(true);
+    try {
+      const res = await fetch('/api/products?limit=1000');
+      if (res.ok) {
+        const data = await res.json();
+        setProducts(data.data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load products:', err);
+    } finally {
+      setStockDataLoading(false);
+    }
+  };
+
+  const loadWarehouses = async () => {
+    setStockDataLoading(true);
+    try {
+      const res = await fetch('/api/warehouses');
+      if (res.ok) {
+        const data = await res.json();
+        setWarehouses(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to load warehouses:', err);
+    } finally {
+      setStockDataLoading(false);
+    }
+  };
+
   const loadNotificationSettings = async () => {
     try {
       const res = await fetch('/api/settings/notifications');
@@ -176,25 +211,33 @@ export default function SettingsPage() {
   };
 
   const handleToggleNotification = async (key: keyof typeof notificationSettings) => {
-    const newSettings = { ...notificationSettings, [key]: !notificationSettings[key] };
-    setNotificationSettings(newSettings);
+    // Optimistic UI update
+    const oldState = { ...notificationSettings };
+    const newState = { ...oldState, [key]: !oldState[key] };
+    setNotificationSettings(newState);
 
     try {
       const res = await fetch('/api/settings/notifications', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newSettings),
+        body: JSON.stringify(newState),
       });
 
       if (res.ok) {
+        const result = await res.json();
+        // Update with real server response
+        setNotificationSettings(result.settings);
         success(t('common', 'saved'), "Bildirishnoma sozlamalari saqlandi");
       } else {
-        setNotificationSettings(notificationSettings);
-        error(t('messages', 'error'), t('messages', 'error'));
+        // Revert on server error
+        setNotificationSettings(oldState);
+        const errData = await res.json().catch(() => ({ error: t('messages', 'error') }));
+        error(t('messages', 'error'), errData.error || t('messages', 'error'));
       }
     } catch (err) {
-      setNotificationSettings(notificationSettings);
-      error(t('messages', 'error'), t('messages', 'error'));
+      // Revert on network error
+      setNotificationSettings(oldState);
+      error(t('messages', 'error'), 'Serverga ulanib bo\'lmadi');
     }
   };
 
@@ -641,7 +684,82 @@ export default function SettingsPage() {
                           <div>
                             <div className="text-xs text-indigo-600/70 dark:text-indigo-400/70 font-medium">Lavozim</div>
                             <div className="font-bold text-sm text-indigo-700 dark:text-indigo-300">{roleLabel(profile.role)}</div>
-                  </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                          {t('common', 'name')} <span className="text-red-500">*</span>
+                        </label>
+                        <div className="relative">
+                          <UserCircle size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={profile.name}
+                            onChange={e => setProfile({ ...profile, name: e.target.value })}
+                            placeholder="Ism Familiya"
+                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                          {t('auth', 'email')}
+                        </label>
+                        <div className="relative">
+                          <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="email"
+                            value={profile.email}
+                            onChange={e => setProfile({ ...profile, email: e.target.value })}
+                            placeholder="email@example.com"
+                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                          {t('common', 'phone') || 'Telefon raqam'}
+                        </label>
+                        <div className="relative">
+                          <Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="tel"
+                            value={profile.phone}
+                            onChange={e => setProfile({ ...profile, phone: e.target.value })}
+                            placeholder="+998 90 000 0000"
+                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="pt-2 flex items-center gap-3">
+                        <button
+                          onClick={handleSaveProfile}
+                          disabled={loading || !isProfileChanged()}
+                          className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-sm shadow-indigo-500/20"
+                        >
+                          {loading ? (
+                            <RefreshCw className="animate-spin" size={18} />
+                          ) : (
+                            <Save size={18} />
+                          )}
+                          {loading ? t('common', 'loading') : t('common', 'save')}
+                        </button>
+                        {isProfileChanged() && (
+                          <button
+                            onClick={() => setProfile(profileOriginal)}
+                            className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
+                          >
+                            Bekor qilish
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -734,81 +852,6 @@ export default function SettingsPage() {
                       )}
                     </div>
                   </div>
-                </div>
-              )}
-
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                          {t('common', 'name')} <span className="text-red-500">*</span>
-                        </label>
-                        <div className="relative">
-                          <UserCircle size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <input
-                            type="text"
-                            value={profile.name}
-                            onChange={e => setProfile({ ...profile, name: e.target.value })}
-                            placeholder="Ism Familiya"
-                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                          {t('auth', 'email')}
-                        </label>
-                        <div className="relative">
-                          <Mail size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <input
-                            type="email"
-                            value={profile.email}
-                            onChange={e => setProfile({ ...profile, email: e.target.value })}
-                            placeholder="email@example.com"
-                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                          {t('common', 'phone') || 'Telefon raqam'}
-                        </label>
-                        <div className="relative">
-                          <Phone size={18} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <input
-                            type="tel"
-                            value={profile.phone}
-                            onChange={e => setProfile({ ...profile, phone: e.target.value })}
-                            placeholder="+998 90 000 0000"
-                            className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700/50 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none transition-all focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 dark:focus:border-indigo-500 text-slate-900 dark:text-white placeholder-slate-400"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="pt-2 flex items-center gap-3">
-                        <button
-                          onClick={handleSaveProfile}
-                          disabled={loading || !isProfileChanged()}
-                          className="flex items-center justify-center gap-2 bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-semibold hover:bg-indigo-700 transition-all active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none shadow-sm shadow-indigo-500/20"
-                        >
-                          {loading ? (
-                            <RefreshCw className="animate-spin" size={18} />
-                          ) : (
-                            <Save size={18} />
-                          )}
-                          {loading ? t('common', 'loading') : t('common', 'save')}
-                        </button>
-                        {isProfileChanged() && (
-                          <button
-                            onClick={() => setProfile(profileOriginal)}
-                            className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
-                          >
-                            Bekor qilish
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               )}
 
@@ -1062,9 +1105,13 @@ export default function SettingsPage() {
                           <select
                             value={newThreshold.productId}
                             onChange={(e) => setNewThreshold({ ...newThreshold, productId: e.target.value })}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                            disabled={stockDataLoading}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 disabled:opacity-50"
                           >
                             <option value="">Mahsulot tanlang...</option>
+                            {products.map((p: any) => (
+                              <option key={p.id} value={p.id}>{p.name}</option>
+                            ))}
                           </select>
                         </div>
                         <div>
@@ -1072,9 +1119,13 @@ export default function SettingsPage() {
                           <select
                             value={newThreshold.warehouseId}
                             onChange={(e) => setNewThreshold({ ...newThreshold, warehouseId: e.target.value })}
-                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
+                            disabled={stockDataLoading}
+                            className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 disabled:opacity-50"
                           >
                             <option value="">Ombor tanlang...</option>
+                            {warehouses.map((w: any) => (
+                              <option key={w.id} value={w.id}>{w.name}</option>
+                            ))}
                           </select>
                         </div>
                         <div>

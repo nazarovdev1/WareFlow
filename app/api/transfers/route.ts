@@ -1,80 +1,99 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { WAREHOUSE_PERMISSIONS } from '@/lib/permissions';
+import { checkPermission } from '@/lib/checkPermission';
 
 const TransferSchema = z.object({
-  docNumber: z.string().optional(),
-  date: z.string().or(z.date()).optional(),
-  fromWarehouseId: z.string().min(1, "Jo'natuvchi ombor majburiy"),
-  toWarehouseId: z.string().min(1, "Qabul qiluvchi ombor majburiy"),
+  fromWarehouseId: z.string().min(1, 'Manba ombor majburiy'),
+  toWarehouseId: z.string().min(1, 'Maqsad ombor majburiy'),
   responsiblePerson: z.string().optional().nullable(),
+  notes: z.string().optional().nullable(),
   items: z.array(z.object({
     productId: z.string(),
-    quantity: z.coerce.number().min(0.001, "Miqdor 0 dan katta bo'lishi kerak"),
-  })).min(1, "Kamida bitta mahsulot bo'lishi shart"),
+    quantity: z.number().positive(),
+  })).min(1, 'Kamida bitta mahsulot bo\'lishi kerak'),
 });
 
-
-// GET /api/transfers — List warehouse transfers with filters
-export async function GET(req: NextRequest) {
+// GET /api/transfers — List all transfers (company filtered)
+export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as any;
+    const { error, user } = await checkPermission('view_warehouse');
+    if (error) return error;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Tizimga kiring' }, { status: 401 });
-    }
-
-    const isAdmin = user.role === 'ADMIN';
-    const hasPermission = isAdmin || user.permissions?.includes(WAREHOUSE_PERMISSIONS[0]);
-
-    if (!hasPermission) {
-      return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
-    }
-
-    const { searchParams } = new URL(req.url);
-    const search = searchParams.get('search') || '';
-    const fromWarehouseId = searchParams.get('fromWarehouseId');
-    const toWarehouseId = searchParams.get('toWarehouseId');
-    const dateFrom = searchParams.get('dateFrom');
-    const dateTo = searchParams.get('dateTo');
+    const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '25');
-    const skip = (page - 1) * limit;
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const status = searchParams.get('status');
+    const warehouseId = searchParams.get('warehouseId');
+    const branchId = searchParams.get('branchId');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
-    if (search) {
-      where.docNumber = { contains: search, mode: 'insensitive' };
+    // Company isolation
+    if (user.role !== 'SUPER_ADMIN' && user.companyId) {
+      where.companyId = user.companyId;
     }
-    if (fromWarehouseId) where.fromWarehouseId = fromWarehouseId;
-    if (toWarehouseId) where.toWarehouseId = toWarehouseId;
-    if (dateFrom || dateTo) {
-      where.date = {};
-      if (dateFrom) where.date.gte = new Date(dateFrom);
-      if (dateTo) where.date.lte = new Date(dateTo);
+
+    if (status) where.status = status;
+
+    // Filter by warehouse (either from or to)
+    if (warehouseId) {
+      where.OR = [
+        { fromWarehouseId: warehouseId },
+        { toWarehouseId: warehouseId },
+      ];
+    }
+
+    // Filter by branch through warehouses
+    if (branchId) {
+      const branchWarehouses = await prisma.warehouse.findMany({
+        where: { branchId },
+        select: { id: true },
+      });
+      const whIds = branchWarehouses.map(w => w.id);
+      where.OR = [
+        { fromWarehouseId: { in: whIds } },
+        { toWarehouseId: { in: whIds } },
+      ];
     }
 
     const [transfers, total] = await Promise.all([
       prisma.transfer.findMany({
         where,
         include: {
-          fromWarehouse: true,
-          toWarehouse: true,
-          items: { include: { product: true } },
+          fromWarehouse: {
+            select: {
+              name: true,
+              branch: { select: { id: true, name: true } },
+            },
+          },
+          toWarehouse: {
+            select: {
+              name: true,
+              branch: { select: { id: true, name: true } },
+            },
+          },
+          items: {
+            include: {
+              product: { select: { name: true, sku: true } },
+            },
+          },
         },
-        skip,
-        take: limit,
         orderBy: { date: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       prisma.transfer.count({ where }),
     ]);
 
     return NextResponse.json({
       data: transfers,
-      pagination: { page, limit, total, totalPages: Math.ceil(total / limit) },
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
     });
   } catch (error) {
     console.error('GET /api/transfers error:', error);
@@ -82,98 +101,103 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// POST /api/transfers — Create a new transfer with items
-export async function POST(req: NextRequest) {
+// POST /api/transfers — Create new transfer (company isolated)
+export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    const user = session?.user as any;
+    const { error, user } = await checkPermission('edit_warehouse');
+    if (error) return error;
 
-    if (!user) {
-      return NextResponse.json({ error: 'Tizimga kiring' }, { status: 401 });
-    }
-
-    const isAdmin = user.role === 'ADMIN';
-    const hasPermission = isAdmin || user.permissions?.includes(WAREHOUSE_PERMISSIONS[1]);
-
-    if (!hasPermission) {
-      return NextResponse.json({ error: 'Ruxsat yo\'q' }, { status: 403 });
-    }
-
-    const body = await req.json();
-
-    // Validate with Zod
+    const body = await request.json();
     const result = TransferSchema.safeParse(body);
+
     if (!result.success) {
       return NextResponse.json({
         error: 'Validatsiya xatosi',
-        details: result.error.issues.map(e => e.message)
+        details: result.error.issues.map(e => e.message),
       }, { status: 400 });
     }
 
-    const { docNumber, date, fromWarehouseId, toWarehouseId, responsiblePerson, items } = result.data;
+    const { fromWarehouseId, toWarehouseId, responsiblePerson, notes, items } = result.data;
 
+    // Validate warehouses belong to same company
     if (fromWarehouseId === toWarehouseId) {
-      return NextResponse.json({ error: 'Jo\'natuvchi va qabul qiluvchi ombor bir xil bo\'lmasligi kerak' }, { status: 400 });
+      return NextResponse.json({
+        error: 'Manba va maqsad ombor bir xil bo\'lishi mumkin emas',
+      }, { status: 400 });
     }
 
-    const transfer = await prisma.$transaction(async (tx) => {
-      // Create transfer with items
-      const newTransfer = await tx.transfer.create({
-        data: {
-          docNumber: docNumber || `TR-${Date.now()}`,
-          date: date ? new Date(date) : new Date(),
-          fromWarehouseId,
-          toWarehouseId,
-          responsiblePerson: responsiblePerson || null,
-          status: 'PENDING',
-          items: {
-            create: (items || []).map((item: any) => ({
-              productId: item.productId,
-              quantity: parseFloat(item.quantity),
-            })),
+    // Check stock availability
+    for (const item of items) {
+      const stock = await prisma.stockEntry.findUnique({
+        where: {
+          productId_warehouseId: {
+            productId: item.productId,
+            warehouseId: fromWarehouseId,
           },
-        },
-        include: {
-          fromWarehouse: true,
-          toWarehouse: true,
-          items: { include: { product: true } },
         },
       });
 
-      // Update stock: subtract from source, add to destination
-      for (const item of newTransfer.items) {
-        // Reduce from source warehouse
-        await tx.stockEntry.updateMany({
-          where: { productId: item.productId, warehouseId: fromWarehouseId },
-          data: { quantity: { decrement: item.quantity } },
+      if (!stock || stock.quantity < item.quantity) {
+        const product = await prisma.product.findUnique({
+          where: { id: item.productId },
+          select: { name: true },
         });
-
-        // Add to destination warehouse (upsert)
-        await tx.stockEntry.upsert({
-          where: {
-            productId_warehouseId: {
-              productId: item.productId,
-              warehouseId: toWarehouseId,
-            },
-          },
-          update: { quantity: { increment: item.quantity } },
-          create: {
-            productId: item.productId,
-            warehouseId: toWarehouseId,
-            quantity: item.quantity,
-          },
-        });
+        return NextResponse.json({
+          error: `Yetarli zaxira yo'q: ${product?.name || item.productId} (mavjud: ${stock?.quantity || 0}, so'ralgan: ${item.quantity})`,
+        }, { status: 400 });
       }
+    }
 
-      return newTransfer;
+    // Generate document number
+    const count = await prisma.transfer.count();
+    const docNumber = `TR-${String(count + 1).padStart(6, '0')}`;
+
+    // Get company from warehouse
+    const fromWarehouse = await prisma.warehouse.findUnique({
+      where: { id: fromWarehouseId },
+      select: { companyId: true },
+    });
+
+    const transfer = await prisma.transfer.create({
+      data: {
+        docNumber,
+        responsiblePerson: responsiblePerson || null,
+        notes: notes || null,
+        status: 'PENDING',
+        companyId: user.companyId || fromWarehouse?.companyId || null,
+        fromWarehouseId,
+        toWarehouseId,
+        items: {
+          create: items.map(item => ({
+            productId: item.productId,
+            quantity: item.quantity,
+          })),
+        },
+      },
+      include: {
+        fromWarehouse: {
+          select: {
+            name: true,
+            branch: { select: { id: true, name: true } },
+          },
+        },
+        toWarehouse: {
+          select: {
+            name: true,
+            branch: { select: { id: true, name: true } },
+          },
+        },
+        items: {
+          include: {
+            product: { select: { name: true, sku: true } },
+          },
+        },
+      },
     });
 
     return NextResponse.json(transfer, { status: 201 });
-  } catch (error: any) {
+  } catch (error) {
     console.error('POST /api/transfers error:', error);
-    if (error.code === 'P2002') {
-      return NextResponse.json({ error: 'Bu hujjat raqami allaqachon mavjud' }, { status: 409 });
-    }
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

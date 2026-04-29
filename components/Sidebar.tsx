@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutGrid, Package, Warehouse, Users, Truck, ShoppingCart, Banknote, Building2, FileBarChart, Settings, ChevronDown, UserRound, UsersRound, CreditCard, UserPlus, Server, Layout } from 'lucide-react';
+import { LayoutGrid, Package, Warehouse, Users, Truck, ShoppingCart, Banknote, Building2, FileBarChart, Settings, ChevronDown, UserRound, UsersRound, CreditCard, UserPlus, Server, Layout, Factory, Store } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useSession } from 'next-auth/react';
@@ -15,6 +15,7 @@ export default function Sidebar() {
   const [mijozlarOpen, setMijozlarOpen] = useState(pathname.includes('/customers') && !pathname.includes('/creditors'));
   const [suppliersOpen, setSuppliersOpen] = useState(pathname.includes('/suppliers'));
   const [usersOpen, setUsersOpen] = useState(pathname.includes('/users') || pathname.includes('/requests') || pathname.includes('/subscriptions'));
+  const [enterprisesOpen, setEnterprisesOpen] = useState(pathname.includes('/enterprises'));
   const [pendingRequests, setPendingRequests] = useState(0);
 
   const isAdmin = (session?.user as { role?: string })?.role === 'ADMIN';
@@ -107,6 +108,7 @@ export default function Sidebar() {
             </button>
             <div className={`overflow-hidden transition-all duration-300 ${omborOpen ? 'max-h-60 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
               <Link href="/warehouse" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>{t('warehouse', 'transfers')}</Link>
+              <Link href="/warehouse/transfers" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse/transfers' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>Filial ko'chirish</Link>
               <Link href="/warehouse/stock" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse/stock' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>{t('warehouse', 'stockRemaining')}</Link>
               <Link href="/warehouse/inventory" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse/inventory' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>{t('warehouse', 'inventory')}</Link>
               <Link href="/warehouse/adjustment" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/warehouse/adjustment' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>Korrektirovka</Link>
@@ -160,10 +162,40 @@ export default function Sidebar() {
         )}
 
         <Link href="/cashbox" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/cashbox' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Banknote className="mr-3" size={18} /> {t('sidebar', 'money')}</Link>
-        <Link href="/enterprises" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/enterprises' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Building2 className="mr-3" size={18} /> {t('sidebar', 'enterprises')}</Link>
+        {isAdmin && (
+          <div className="mb-1">
+            <button
+              onClick={() => setEnterprisesOpen(!enterprisesOpen)}
+              className={`w-full flex items-center justify-between px-3 py-2.5 text-sm font-medium rounded-lg transition-colors border-l-[3px] ${pathname.includes('/enterprises') || pathname.includes('/tenants') ? 'bg-[#152033] dark:bg-slate-800 text-white border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-transparent'}`}
+            >
+              <div className="flex items-center">
+                <Building2 className="mr-3" size={18} /> {t('sidebar', 'enterprises')}
+              </div>
+              <ChevronDown size={14} className={`transition-transform duration-200 ${enterprisesOpen ? 'rotate-180' : ''}`} />
+            </button>
+            <div className={`overflow-hidden transition-all duration-300 ${enterprisesOpen ? 'max-h-60 opacity-100 mt-1' : 'max-h-0 opacity-0'}`}>
+              <Link href="/enterprises" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/enterprises' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>
+                <Building2 size={14} className="inline mr-2" /> Korxonalar
+              </Link>
+              <Link href="/enterprises#branches" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/enterprises' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>
+                <Factory size={14} className="inline mr-2" /> Filiallar
+              </Link>
+              <Link href="/tenants" className={`block py-2.5 pl-11 pr-3 text-sm rounded-lg transition-colors ${pathname === '/tenants' ? 'text-teal-400' : 'text-slate-400 hover:text-white hover:bg-[#152033]/50 dark:hover:bg-slate-800/50'}`}>
+                <Store size={14} className="inline mr-2" /> Kompaniyalar
+              </Link>
+            </div>
+          </div>
+        )}
+        {!isAdmin && (
+          <Link href="/enterprises" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/enterprises' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Building2 className="mr-3" size={18} /> {t('sidebar', 'enterprises')}</Link>
+        )}
 
         {hasPermission('view_reports') && (
           <Link href="/reports" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/reports' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><FileBarChart className="mr-3" size={18} /> {t('sidebar', 'reports')}</Link>
+        )}
+
+        {hasPermission('view_reports') && (
+          <Link href="/reports/branch" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/reports/branch' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Factory className="mr-3" size={18} /> Filial hisobotlari</Link>
         )}
 
         {isAdmin && (
@@ -174,9 +206,6 @@ export default function Sidebar() {
           <Link href="/1c-sync" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname.includes('/1c-sync') ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Server className="mr-3" size={18} /> 1C Sync</Link>
         )}
 
-        {isAdmin && (
-          <Link href="/tenants" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname.includes('/tenants') ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Building2 className="mr-3" size={18} /> Kompaniyalar</Link>
-        )}
 
         <Link href="/settings" className={`flex items-center px-3 py-2.5 text-sm font-medium rounded-lg transition-colors mb-1 ${pathname === '/settings' ? 'bg-[#152033] dark:bg-slate-800 text-white border-l-[3px] border-teal-500' : 'text-slate-400 hover:bg-[#152033] dark:hover:bg-slate-800 hover:text-white border-l-[3px] border-transparent'}`}><Settings className="mr-3" size={18} /> {t('sidebar', 'settings')}</Link>
       </nav>

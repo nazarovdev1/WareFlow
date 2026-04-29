@@ -419,12 +419,14 @@ export default function DeliveryDetailPage() {
                 <h2 className="text-sm font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4">
                   Marshrut xaritasi
                 </h2>
-                {delivery.warehouse.latitude && delivery.warehouse.longitude ? (
+                {
+                  (delivery.warehouse as any).latitude && 
+                  (delivery.warehouse as any).longitude ? (
                   <div className="mb-4">
                     <RouteMap
                       origin={{
-                        latitude: delivery.warehouse.latitude,
-                        longitude: delivery.warehouse.longitude,
+                        latitude: (delivery.warehouse as any).latitude,
+                        longitude: (delivery.warehouse as any).longitude,
                       }}
                       stops={delivery.route.stops
                         .filter(s => s.latitude && s.longitude)

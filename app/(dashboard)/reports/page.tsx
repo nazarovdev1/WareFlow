@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FileBarChart, TrendingUp, PieChart, BarChart3, DollarSign, Users, ShoppingBag, ArrowRight } from 'lucide-react';
+import { FileBarChart, TrendingUp, PieChart, BarChart3, DollarSign, Users, ShoppingBag, ArrowRight, Wrench } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 
 const reportTypes = [
@@ -84,11 +84,27 @@ export default function ReportsPage() {
             <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">{report.title}</h3>
             <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">{report.description}</p>
             <div className={`flex items-center gap-2 text-sm font-medium text-${report.color}-600 dark:text-${report.color}-400 opacity-0 group-hover:opacity-100 transition-opacity`}>
-              <span>Ko&apos;rish</span>
+              <span>Ko'rish</span>
               <ArrowRight size={16} />
             </div>
           </Link>
         ))}
+
+        {/* Report Builder */}
+        <Link
+          href="/reports/builder"
+          className="group bg-gradient-to-br from-teal-50 to-emerald-50 dark:from-teal-900/20 dark:to-emerald-900/20 rounded-2xl border border-teal-200 dark:border-teal-500/30 p-6 transition-all duration-200 hover:shadow-lg hover:-translate-y-1 hover:border-teal-400 dark:hover:border-teal-500"
+        >
+          <div className="w-14 h-14 bg-teal-100 dark:bg-teal-500/20 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-500/30 rounded-xl flex items-center justify-center mb-4">
+            <Wrench size={26} />
+          </div>
+          <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">Hisobot Builder</h3>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">O'zingizning dinamik hisobotlaringizni yarating: filterlar, guruhlash, agregatsiyalar</p>
+          <div className="flex items-center gap-2 text-sm font-medium text-teal-600 dark:text-teal-400 opacity-0 group-hover:opacity-100 transition-opacity">
+            <span>Yaratish</span>
+            <ArrowRight size={16} />
+          </div>
+        </Link>
       </div>
 
       <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-5">

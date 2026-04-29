@@ -3,11 +3,12 @@ import prisma from '@/lib/db';
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const order = await prisma.order.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         customer: {
           select: {
@@ -52,14 +53,15 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await req.json();
     const { status, returnItems, returnReason } = body;
 
     const order = await prisma.order.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: { items: true, customer: true },
     });
 
@@ -70,7 +72,7 @@ export async function PATCH(
     if (status === 'CANCELLED') {
       await prisma.$transaction(async (tx) => {
         await tx.order.update({
-          where: { id: params.id },
+          where: { id },
           data: { status: 'CANCELLED' },
         });
 
@@ -106,7 +108,7 @@ export async function PATCH(
 
       await prisma.$transaction(async (tx) => {
         await tx.order.update({
-          where: { id: params.id },
+          where: { id },
           data: { 
             status: 'RETURNED',
             notes: returnReason ? (order.notes || '') + `\n\nQaytarish sababi: ${returnReason}` : order.notes,

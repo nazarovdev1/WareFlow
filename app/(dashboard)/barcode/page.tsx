@@ -1,18 +1,27 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
-import { AlertCircle, Plus, Printer, X, CheckSquare, Square, Trash2 } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { Plus, Printer, Trash2, Settings } from 'lucide-react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { useReactToPrint } from 'react-to-print';
+import JsBarcode from 'jsbarcode';
 
 export default function BarcodePage() {
   const { t } = useLanguage();
-  const [showNotification, setShowNotification] = useState(true);
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState<any[]>([
-    { id: 1, productId: '', barcode: '', quantity: 1, name: '' }
+    { id: 1, productId: '', barcode: '', quantity: 1, name: '', price: 0 }
   ]);
   const printRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  // Label settings
+  const [labelWidth, setLabelWidth] = useState(50);
+  const [labelHeight, setLabelHeight] = useState(30);
+  const [showName, setShowName] = useState(true);
+  const [showBarcode, setShowBarcode] = useState(true);
+  const [showPrice, setShowPrice] = useState(true);
+  const [fontSize, setFontSize] = useState(8);
 
   useEffect(() => {
     fetch('/api/products?limit=1000')
@@ -31,7 +40,8 @@ export default function BarcodePage() {
       ...newItems[index],
       productId,
       name: product?.name || '',
-      barcode: product?.barcode || ''
+      barcode: product?.barcode || '',
+      price: product?.sellPrice || 0
     };
     setSelectedItems(newItems);
   };
@@ -43,7 +53,7 @@ export default function BarcodePage() {
   };
 
   const addRow = () => {
-    setSelectedItems([...selectedItems, { id: Date.now(), productId: '', barcode: '', quantity: 1, name: '' }]);
+    setSelectedItems([...selectedItems, { id: Date.now(), productId: '', barcode: '', quantity: 1, name: '', price: 0 }]);
   };
 
   const removeRow = (index: number) => {
@@ -51,17 +61,24 @@ export default function BarcodePage() {
     setSelectedItems(selectedItems.filter((_, i) => i !== index));
   };
 
-  // Generate barcode visual bars
-  const generateBarcodeBars = (barcode: string) => {
-    if (!barcode) return [];
-    const bars: { width: string }[] = [];
-    for (let i = 0; i < barcode.length; i++) {
-      const num = parseInt(barcode[i]) || 0;
-      const width = (num + 1) * 2 + 'px';
-      bars.push({ width });
+  // Generate real barcode canvas
+  const generateBarcodeCanvas = useCallback((barcode: string) => {
+    if (!canvasRef.current || !barcode) return;
+    try {
+      JsBarcode(canvasRef.current, barcode, {
+        format: "EAN13",
+        width: 1.5,
+        height: labelHeight * 0.4,
+        displayValue: true,
+        fontSize: fontSize,
+        margin: 0,
+        background: "#ffffff",
+        lineColor: "#000000",
+      });
+    } catch (e) {
+      console.error('Barcode generation error:', e);
     }
-    return bars;
-  };
+  }, [labelHeight, fontSize]);
 
   // Print handler
   const handlePrint = useReactToPrint({
@@ -79,7 +96,7 @@ export default function BarcodePage() {
         labels.push({
           name: item.name || product?.name || 'Product Name',
           barcode: item.barcode || product?.barcode || '000000000000',
-          price: product?.sellPrice?.toLocaleString() || '0'
+          price: product?.sellPrice?.toLocaleString() || item.price || '0'
         });
       }
     });
@@ -88,11 +105,20 @@ export default function BarcodePage() {
 
   const printLabels = generatePrintLabels();
 
+  const getPreviewBarcodeUrl = (barcode: string) => {
+    if (!barcode || !canvasRef.current) return '';
+    generateBarcodeCanvas(barcode);
+    return canvasRef.current.toDataURL();
+  };
+
   return (
     <div className="p-8 font-sans max-w-7xl mx-auto text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-900">
+      {/* Hidden canvas for barcode generation */}
+      <canvas ref={canvasRef} style={{ display: 'none' }} />
+
       <div className="mb-8">
         <h1 className="text-3xl font-black text-slate-900 dark:text-slate-100 tracking-tight">{t('products', 'barcodePrint')}</h1>
-        <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">{t('products', 'title')}lar uchun maxsus yorliqlarni loyihalash va chiqarish</p>
+        <p className="text-slate-500 dark:text-slate-400 mt-2 font-medium">{t('products', 'barcodePrintDesc')}</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -100,7 +126,7 @@ export default function BarcodePage() {
         <div className="col-span-2 space-y-6">
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('products', 'title')}larni tanlash</h2>
+              <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">{t('products', 'selectProducts')}</h2>
               <button
                 onClick={addRow}
                 className="text-teal-600 dark:text-teal-400 font-bold text-sm bg-teal-50 dark:bg-teal-900/20 px-3 py-1.5 rounded-lg flex items-center hover:bg-teal-100 dark:hover:bg-teal-900/40 transition"
@@ -111,16 +137,17 @@ export default function BarcodePage() {
 
             <div className="grid grid-cols-12 gap-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 px-2">
               <div className="col-span-1">#</div>
-              <div className="col-span-6">{t('products', 'title')} Nomi</div>
-              <div className="col-span-3">{t('products', 'barcode')}</div>
-              <div className="col-span-2 text-center">{t('common', 'quantity')}</div>
+              <div className="col-span-5">{t('products', 'title')} Nomi</div>
+              <div className="col-span-2">{t('products', 'barcode')}</div>
+              <div className="col-span-2">{t('common', 'quantity')}</div>
+              <div className="col-span-2"></div>
             </div>
 
             <div className="space-y-3">
               {selectedItems.map((item, index) => (
                 <div key={item.id} className="grid grid-cols-12 gap-4 items-center bg-slate-50 dark:bg-slate-700/50 p-2 text-sm rounded-lg border border-slate-100 dark:border-slate-700 group">
                   <div className="col-span-1 font-bold text-center dark:text-slate-300">{index + 1}</div>
-                  <div className="col-span-6">
+                  <div className="col-span-5">
                     <select
                       value={item.productId}
                       onChange={(e) => handleProductChange(index, e.target.value)}
@@ -132,7 +159,7 @@ export default function BarcodePage() {
                       ))}
                     </select>
                   </div>
-                  <div className="col-span-3">
+                  <div className="col-span-2">
                     <input
                       type="text"
                       value={item.barcode}
@@ -144,13 +171,29 @@ export default function BarcodePage() {
                   <div className="col-span-2 flex items-center space-x-2">
                     <input
                       type="number"
+                      min="1"
                       value={item.quantity}
-                      onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 0)}
+                      onChange={(e) => handleQuantityChange(index, parseInt(e.target.value) || 1)}
                       className="w-full bg-slate-100 dark:bg-slate-600 border-none p-2.5 rounded-md focus:ring-2 focus:ring-teal-500/20 outline-none text-slate-700 dark:text-slate-200 font-medium text-center"
                     />
+                  </div>
+                  <div className="col-span-2 flex items-center justify-end space-x-1">
+                    {item.productId && (
+                      <button
+                        onClick={() => {
+                          const p = products.find(x => x.id === item.productId);
+                          if (p) window.open(getPreviewBarcodeUrl(p.barcode));
+                        }}
+                        className="text-slate-300 dark:text-slate-500 hover:text-teal-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Ko'rish"
+                      >
+                        <Settings size={16} />
+                      </button>
+                    )}
                     <button
                       onClick={() => removeRow(index)}
                       className="text-slate-300 dark:text-slate-500 hover:text-rose-500 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      title="O'chirish"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -160,45 +203,68 @@ export default function BarcodePage() {
             </div>
           </div>
 
-          {/* Stiker sozlamalari */}
+          {/* Label Settings */}
           <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-sm border border-slate-100 dark:border-slate-700">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">Stiker sozlamalari</h2>
+            <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 mb-6">{t('products', 'labelSettings')}</h2>
 
             <div className="grid grid-cols-2 gap-8 mb-8">
               <div>
-                <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Kengligi (MM)</div>
+                <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">{t('products', 'labelWidth')} ({labelWidth} mm)</div>
                 <div className="flex items-center space-x-4">
-                   <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full relative">
-                      <div className="absolute left-0 top-0 h-full bg-teal-600 rounded-full w-1/2"></div>
-                      <div className="absolute left-1/2 top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-teal-600 border-2 border-white dark:border-slate-800 rounded-full shadow-md cursor-pointer"></div>
-                   </div>
-                   <div className="bg-slate-50 dark:bg-slate-700 px-4 py-2 font-bold text-slate-700 dark:text-slate-200 rounded-lg w-16 text-center border border-slate-100 dark:border-slate-600">50</div>
+                   <input
+                     type="range"
+                     min="20"
+                     max="100"
+                     value={labelWidth}
+                     onChange={(e) => setLabelWidth(Number(e.target.value))}
+                     className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full cursor-pointer accent-teal-600"
+                   />
+                   <div className="bg-slate-50 dark:bg-slate-700 px-4 py-2 font-bold text-slate-700 dark:text-slate-200 rounded-lg w-16 text-center border border-slate-100 dark:border-slate-600">{labelWidth}</div>
                 </div>
               </div>
               <div>
-                <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Balandligi (MM)</div>
+                <div className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">{t('products', 'labelHeight')} ({labelHeight} mm)</div>
                 <div className="flex items-center space-x-4">
-                   <div className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full relative">
-                      <div className="absolute left-0 top-0 h-full bg-teal-600 rounded-full w-1/3"></div>
-                      <div className="absolute left-1/3 top-1/2 -translate-y-1/2 -translate-x-1/2 w-4 h-4 bg-teal-600 border-2 border-white dark:border-slate-800 rounded-full shadow-md cursor-pointer"></div>
-                   </div>
-                   <div className="bg-slate-50 dark:bg-slate-700 px-4 py-2 font-bold text-slate-700 dark:text-slate-200 rounded-lg w-16 text-center border border-slate-100 dark:border-slate-600">30</div>
+                   <input
+                     type="range"
+                     min="15"
+                     max="80"
+                     value={labelHeight}
+                     onChange={(e) => setLabelHeight(Number(e.target.value))}
+                     className="flex-1 h-1.5 bg-slate-200 dark:bg-slate-600 rounded-full cursor-pointer accent-teal-600"
+                   />
+                   <div className="bg-slate-50 dark:bg-slate-700 px-4 py-2 font-bold text-slate-700 dark:text-slate-200 rounded-lg w-16 text-center border border-slate-100 dark:border-slate-600">{labelHeight}</div>
                 </div>
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-y-4">
               <label className="flex items-center space-x-3 cursor-pointer">
-                <div className="text-teal-600 dark:text-teal-400"><CheckSquare size={20} className="fill-teal-50 dark:fill-teal-900/20" /></div>
-                <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{t('common', 'name')}ni qo&apos;shish</span>
+                <input
+                  type="checkbox"
+                  checked={showName}
+                  onChange={(e) => setShowName(e.target.checked)}
+                  className="w-5 h-5 rounded accent-teal-600"
+                />
+                <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{t('common', 'name')}ni qo'shish</span>
               </label>
               <label className="flex items-center space-x-3 cursor-pointer">
-                <div className="text-teal-600 dark:text-teal-400"><CheckSquare size={20} className="fill-teal-50 dark:fill-teal-900/20" /></div>
-                <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{t('products', 'barcode')}ni qo&apos;shish</span>
+                <input
+                  type="checkbox"
+                  checked={showBarcode}
+                  onChange={(e) => setShowBarcode(e.target.checked)}
+                  className="w-5 h-5 rounded accent-teal-600"
+                />
+                <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{t('products', 'barcode')}ni qo'shish</span>
               </label>
               <label className="flex items-center space-x-3 cursor-pointer">
-                <div className="text-teal-600 dark:text-teal-400"><CheckSquare size={20} className="fill-teal-50 dark:fill-teal-900/20" /></div>
-                <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{t('common', 'price')}ni qo&apos;shish</span>
+                <input
+                  type="checkbox"
+                  checked={showPrice}
+                  onChange={(e) => setShowPrice(e.target.checked)}
+                  className="w-5 h-5 rounded accent-teal-600"
+                />
+                <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{t('common', 'price')}ni qo'shish</span>
               </label>
             </div>
           </div>
@@ -207,52 +273,23 @@ export default function BarcodePage() {
         {/* Right Column - Preview Box */}
         <div className="sticky top-8">
           <div className="border-[2.5px] border-dashed border-slate-200 dark:border-slate-700 rounded-2xl h-[420px] flex flex-col items-center justify-center p-8 bg-slate-50 dark:bg-slate-800">
-            <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-10">Stiker Ko&apos;rinishi</h3>
+            <h3 className="text-xs font-black text-slate-500 dark:text-slate-400 uppercase tracking-[0.2em] mb-10">{t('common', 'preview')}</h3>
 
-            <div className="w-full bg-white dark:bg-slate-700 shadow-xl rounded-sm p-4 relative overflow-hidden">
-               <div className="text-center mb-2 h-8 flex flex-col justify-center">
-                 <h4 className="font-bold text-[10px] tracking-wide text-slate-800 dark:text-slate-200 uppercase truncate">
-                   {selectedItems[0]?.name || t('products', 'title') + ' Nomi'}
-                 </h4>
-               </div>
-
-               <div className="bg-slate-900 dark:bg-slate-900 w-full h-12 flex justify-between px-1.5 py-1 mb-1 relative">
-                 <div className="w-1 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-2 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-1.5 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-0.5 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-3 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-1 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-1.5 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-2 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-0.5 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-4 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-1 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-2 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="w-1.5 bg-white dark:bg-slate-200 h-full"></div>
-                 <div className="absolute inset-0 border-4 border-slate-900 dark:border-slate-600"></div>
-                 <div className="absolute bottom-0 w-full bg-white dark:bg-slate-700 h-2 translate-y-3"></div>
-               </div>
-               <div className="text-center font-mono text-[10px] tracking-[0.3em] font-medium text-slate-700 dark:text-slate-300 mb-4 mt-2">
-                 {selectedItems[0]?.barcode || '000000000000'}
-               </div>
-
-               <div className="flex justify-between items-end">
-                 <div>
-                   <span className="text-[7px] font-bold text-slate-400 dark:text-slate-500 block mb-0.5 uppercase">{t('common', 'price')}</span>
-                   <div className="font-black text-teal-600 dark:text-teal-400 text-lg leading-none">
-                     {products.find(p => p.id === selectedItems[0]?.productId)?.sellPrice?.toLocaleString() || '0'} UZS
-                   </div>
+            <div className="w-full bg-white shadow-xl rounded-sm p-4 relative overflow-hidden" style={{
+              width: `${labelWidth}mm`,
+              height: `${labelHeight}mm`,
+              transform: 'scale(2)',
+              transformOrigin: 'center center',
+              marginBottom: '80px'
+            }}>
+               {showName && (
+                 <div className="text-center mb-1 h-5 flex flex-col justify-center">
+                   <h4 className="font-bold text-[8px] tracking-wide text-slate-800 uppercase truncate">
+                     {selectedItems[0]?.name || t('products', 'title') + ' Nomi'}
+                   </h4>
                  </div>
-                 <div className="bg-slate-800 dark:bg-slate-900 p-1 w-6 h-6 flex items-center justify-center rounded-sm">
-                   <span className="text-[6px] font-bold text-white dark:text-slate-300 leading-none">QR</span>
-                 </div>
-               </div>
+               )}
             </div>
-
-            <p className="text-xs text-center text-slate-500 dark:text-slate-400 mt-10 max-w-[200px] leading-relaxed">
-              {"Ushbu ko'rinish tanlangan o'lchamlarga muvofiq avtomatik moslashadi."}
-            </p>
           </div>
         </div>
       </div>
@@ -269,38 +306,39 @@ export default function BarcodePage() {
         </button>
       </div>
 
-      {showNotification && (
-        <div className="fixed bottom-6 right-6 bg-[#0f172a] dark:bg-slate-800 text-white p-4 rounded-xl shadow-2xl flex items-start space-x-4 w-[360px] animate-in slide-in-from-bottom-5">
-           <div className="mt-0.5 w-6 h-6 bg-teal-500/20 text-teal-400 rounded-full flex items-center justify-center flex-shrink-0 border border-teal-500/30">
-            <span className="text-xs font-bold">i</span>
-           </div>
-           <div className="flex-1">
-             <h4 className="font-bold text-sm text-white mb-0.5">Print tayyor</h4>
-             <p className="text-xs text-slate-400 dark:text-slate-500">Print tugmasini bosing va printerga yuboring.</p>
-           </div>
-           <button onClick={() => setShowNotification(false)} className="text-slate-500 dark:text-slate-400 hover:text-white transition">
-             <X size={16} />
-           </button>
-        </div>
-      )}
-
       {/* Hidden print template */}
-      <div className="no-print" style={{ display: 'none' }}>
+      <div style={{ display: 'none' }}>
         <div ref={printRef} className="print-container">
-          <div className="barcode-labels-grid">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0mm', pageBreakInside: 'avoid' }}>
             {printLabels.map((label, index) => (
-              <div key={index} className="barcode-label">
-                <div className="barcode-name">{label.name}</div>
-                <div className="barcode-visual">
-                  {generateBarcodeBars(label.barcode).map((bar, i) => (
-                    <div key={i} className="bar" style={{ width: bar.width }} />
-                  ))}
-                </div>
-                <div className="barcode-number">{label.barcode}</div>
-                <div className="barcode-price">
-                  <div className="barcode-price-value">{label.price} UZS</div>
-                  <div className="barcode-qr">QR</div>
-                </div>
+              <div key={index} style={{
+                width: `${labelWidth}mm`,
+                height: `${labelHeight}mm`,
+                padding: '2mm',
+                boxSizing: 'border-box',
+                fontFamily: 'monospace',
+                pageBreakInside: 'avoid',
+                border: '1px dashed #ddd'
+              }}>
+                {showName && (
+                  <div style={{ fontSize: `${fontSize}px`, textAlign: 'center', fontWeight: 'bold', marginBottom: '1mm', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {label.name}
+                  </div>
+                )}
+                {showBarcode && (
+                  <div style={{ textAlign: 'center', display: 'flex', justifyContent: 'center' }}>
+                    <img
+                      src={getPreviewBarcodeUrl(label.barcode)}
+                      alt="barcode"
+                      style={{ height: `${labelHeight * 0.4}mm`, maxWidth: '100%', width: 'auto' }}
+                    />
+                  </div>
+                )}
+                {showPrice && (
+                  <div style={{ fontSize: `${fontSize + 2}px`, textAlign: 'center', fontWeight: 'bold', marginTop: '1mm', color: '#0d9488' }}>
+                    {label.price} UZS
+                  </div>
+                )}
               </div>
             ))}
           </div>

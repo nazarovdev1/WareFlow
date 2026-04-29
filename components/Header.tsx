@@ -1,17 +1,31 @@
 'use client';
 
-import { Bell, Search, Settings, Check, X, User, LogOut, ChevronDown, UserPlus } from 'lucide-react';
+import { Bell, Search, Settings, Check, X, User, LogOut, ChevronDown, UserPlus, Globe } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useCallback } from 'react';
 import { useLanguage } from '@/lib/i18n/LanguageContext';
 import { signOut, useSession } from 'next-auth/react';
 import { useNotifications, getNotificationIcon, timeAgo } from '@/hooks/useNotifications';
+import BranchSelector from '@/components/BranchSelector';
+
+const languageNames: Record<string, string> = {
+  uz: "O'z",
+  ru: 'Ру',
+  en: 'En',
+};
+
+const languageFlags: Record<string, string> = {
+  uz: '🇺🇿',
+  ru: '🇷🇺',
+  en: '🇬🇧',
+};
 
 export default function Header() {
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { data: session } = useSession();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
+  const [showLangMenu, setShowLangMenu] = useState(false);
   const {
     notifications,
     unreadCount,
@@ -46,6 +60,8 @@ export default function Header() {
       </div>
 
       <div className="flex items-center space-x-4">
+        <BranchSelector />
+
         <div className="relative">
           <button
             onClick={handleBellClick}
@@ -186,6 +202,48 @@ export default function Header() {
         >
           <Settings size={20} />
         </Link>
+
+        <div className="relative">
+          <button
+            onClick={() => setShowLangMenu(prev => !prev)}
+            className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 transition-colors p-2 focus:outline-none"
+            title={t('settings', 'language')}
+          >
+            <Globe size={18} />
+            <span className="text-xs font-semibold uppercase hidden sm:inline">{languageNames[language]}</span>
+          </button>
+
+          {showLangMenu && (
+            <>
+              <div
+                className="fixed inset-0 z-50"
+                onClick={() => setShowLangMenu(false)}
+              />
+              <div className="absolute right-0 top-full mt-2 w-40 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-[60] overflow-hidden">
+                {(['uz', 'ru', 'en'] as const).map((lang) => (
+                  <button
+                    key={lang}
+                    onClick={() => {
+                      setLanguage(lang);
+                      setShowLangMenu(false);
+                    }}
+                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm transition-colors ${
+                      language === lang
+                        ? 'bg-teal-50 dark:bg-teal-900/20 text-teal-700 dark:text-teal-300 font-semibold'
+                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    <span className="text-base">{languageFlags[lang]}</span>
+                    <span>{languageNames[lang]}</span>
+                    {language === lang && (
+                      <Check size={14} className="ml-auto text-teal-600 dark:text-teal-400" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
 
         <div className="relative">
           <button

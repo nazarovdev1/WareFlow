@@ -21,9 +21,68 @@ model Company {
 
   users     User[]
   warehouses Warehouse[]
+  branches  Branch[]
+
+  // Company-isolated entities
+  categories       Category[]
+  folders          Folder[]
+  units            Unit[]
+  products         Product[]
+  customerGroups   CustomerGroup[]
+  customers        Customer[]
+  suppliers        Supplier[]
+  priceLists       PriceList[]
+  expenseCategories ExpenseCategory[]
+  salesAgents      SalesAgent[]
+  loyaltyPrograms  LoyaltyProgram[]
+  contracts        Contract[]
+  transfers        Transfer[]
+  orders           Order[]
+  purchases        Purchase[]
+  cashboxes        Cashbox[]
+  expenses         Expense[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// ─── BRANCH DOMAIN (FILIAL) ──────────────────────
+
+enum BranchType {
+  HEADQUARTERS
+  BRANCH
+  STORE
+  WAREHOUSE
+}
+
+model Branch {
+  id        String     @id @default(cuid())
+  name      String
+  type      BranchType @default(BRANCH)
+  address   String?
+  phone     String?
+  isActive  Boolean    @default(true)
+
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id])
+
+  managerId String?  @unique
+  manager   User?      @relation("BranchManager", fields: [managerId], references: [id])
+
+  warehouses Warehouse[]
+  users      User[]
+
+  // Branch-level entities
+  orders    Order[]
+  purchases Purchase[]
+  cashboxes Cashbox[]
+  expenses  Expense[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([companyId])
+  @@index([type])
 }
 
 // ─── PRODUCT DOMAIN ──────────────────────────────
@@ -35,6 +94,11 @@ model Category {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   products  Product[]
+
+  companyId String?
+  company   Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
 }
 
 model Folder {
@@ -43,6 +107,11 @@ model Folder {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   products  Product[]
+
+  companyId String?
+  company   Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
 }
 
 model Unit {
@@ -52,6 +121,11 @@ model Unit {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   products  Product[]
+
+  companyId String?
+  company   Company?  @relation(fields: [companyId], references: [id])
+
+  @@index([companyId])
 }
 
 model Product {
@@ -74,6 +148,9 @@ model Product {
   unitId         String?
   unit           Unit?     @relation(fields: [unitId], references: [id])
 
+  companyId      String?
+  company        Company?  @relation(fields: [companyId], references: [id])
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -91,6 +168,7 @@ model Product {
 
   @@index([categoryId])
   @@index([name])
+  @@index([companyId])
 }
 
 // ─── PRODUCT VARIANTS DOMAIN ─────────────────────
@@ -137,6 +215,9 @@ model Warehouse {
 
   companyId String?
   company   Company?  @relation(fields: [companyId], references: [id])
+
+  branchId  String?
+  branch    Branch?   @relation(fields: [branchId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -206,6 +287,10 @@ model Transfer {
   date              DateTime       @default(now())
   responsiblePerson String?
   status            TransferStatus @default(PENDING)
+  notes             String?
+
+  companyId         String?
+  company           Company?       @relation(fields: [companyId], references: [id])
 
   fromWarehouseId   String
   fromWarehouse     Warehouse      @relation("TransferFrom", fields: [fromWarehouseId], references: [id])
@@ -217,6 +302,7 @@ model Transfer {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
+  @@index([companyId])
   @@index([fromWarehouseId])
   @@index([toWarehouseId])
   @@index([date])
@@ -293,7 +379,12 @@ model PriceList {
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
 
+  companyId String?
+  company   Company?      @relation(fields: [companyId], references: [id])
+
   items     PriceListItem[]
+
+  @@index([companyId])
 }
 
 model PriceListItem {
@@ -318,7 +409,12 @@ model CustomerGroup {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id])
+
   customers       Customer[]
+
+  @@index([companyId])
 }
 
 enum CustomerStatus {
@@ -344,6 +440,9 @@ model Customer {
   groupId     String?
   group       CustomerGroup? @relation(fields: [groupId], references: [id])
 
+  companyId   String?
+  company     Company?       @relation(fields: [companyId], references: [id])
+
   createdAt   DateTime       @default(now())
   updatedAt   DateTime       @updatedAt
 
@@ -356,6 +455,7 @@ model Customer {
 
   @@index([groupId])
   @@index([fullName])
+  @@index([companyId])
 }
 
 enum TransactionType {
@@ -398,6 +498,9 @@ model Supplier {
   balanceUSD    Float          @default(0)
   balanceUZS    Float          @default(0)
 
+  companyId     String?
+  company       Company?       @relation(fields: [companyId], references: [id])
+
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
@@ -407,6 +510,7 @@ model Supplier {
   contracts     Contract[]
 
   @@index([name])
+  @@index([companyId])
 }
 
 model SupplierTransaction {
@@ -428,6 +532,7 @@ model SupplierTransaction {
 }
 
 enum UserRole {
+  SUPER_ADMIN
   ADMIN
   MANAGER
   STAFF
@@ -477,6 +582,9 @@ model User {
   companyId   String?
   company     Company?  @relation(fields: [companyId], references: [id])
 
+  branchId    String?
+  branch      Branch?   @relation(fields: [branchId], references: [id])
+
   warehouseId String?
   warehouse   Warehouse? @relation(fields: [warehouseId], references: [id])
 
@@ -488,8 +596,10 @@ model User {
   settings          UserSettings?
   telegramChat      TelegramChat?
   salesAgent        SalesAgent?
+  managedBranch     Branch?           @relation("BranchManager")
 
   @@index([warehouseId])
+  @@index([branchId])
   @@index([phone])
 }
 
@@ -547,6 +657,12 @@ model Purchase {
   status      PurchaseStatus @default(DRAFT)
   notes       String?
 
+  companyId   String?
+  company     Company?       @relation(fields: [companyId], references: [id])
+
+  branchId    String?
+  branch      Branch?        @relation(fields: [branchId], references: [id])
+
   items       PurchaseItem[]
 
   createdAt   DateTime       @default(now())
@@ -555,6 +671,8 @@ model Purchase {
   @@index([supplierId])
   @@index([warehouseId])
   @@index([date])
+  @@index([companyId])
+  @@index([branchId])
 }
 
 model PurchaseItem {
@@ -595,6 +713,12 @@ model Order {
   paymentMethod String?     // CASH, CARD, TRANSFER
   notes         String?
 
+  companyId     String?
+  company       Company?    @relation(fields: [companyId], references: [id])
+
+  branchId      String?
+  branch        Branch?     @relation(fields: [branchId], references: [id])
+
   items         OrderItem[]
   delivery      Delivery?
   commission    Commission?
@@ -607,6 +731,8 @@ model Order {
   @@index([customerId])
   @@index([warehouseId])
   @@index([date])
+  @@index([companyId])
+  @@index([branchId])
 }
 
 model OrderItem {
@@ -643,7 +769,16 @@ model Cashbox {
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
 
+  companyId    String?
+  company      Company?          @relation(fields: [companyId], references: [id])
+
+  branchId     String?
+  branch       Branch?           @relation(fields: [branchId], references: [id])
+
   transactions CashTransaction[]
+
+  @@index([companyId])
+  @@index([branchId])
 }
 
 enum CashTransactionType {
@@ -764,7 +899,7 @@ model Webhook {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-@@index([isActive])
+  @@index([isActive])
 }
 
 // ─── USER NOTIFICATIONS ──────────────────────────
@@ -968,6 +1103,9 @@ model SalesAgent {
   commissionRate Float @default(0)
   isActive    Boolean  @default(true)
 
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id])
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -976,6 +1114,7 @@ model SalesAgent {
 
   @@index([userId])
   @@index([name])
+  @@index([companyId])
 }
 
 model Commission {
@@ -1024,8 +1163,13 @@ model LoyaltyProgram {
   platinumThreshold Int         @default(5000)
   platinumDiscount  Float       @default(15)
 
+  companyId         String?
+  company           Company?    @relation(fields: [companyId], references: [id])
+
   createdAt         DateTime    @default(now())
   updatedAt         DateTime    @updatedAt
+
+  @@index([companyId])
 }
 
 model LoyaltyAccount {
@@ -1081,12 +1225,16 @@ model ExpenseCategory {
   budget      Float?
   isActive    Boolean  @default(true)
 
+  companyId   String?
+  company     Company? @relation(fields: [companyId], references: [id])
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   expenses    Expense[]
 
   @@index([name])
+  @@index([companyId])
 }
 
 model Expense {
@@ -1104,12 +1252,20 @@ model Expense {
   approvedAt  DateTime?
   notes       String?
 
+  companyId   String?
+  company     Company?      @relation(fields: [companyId], references: [id])
+
+  branchId    String?
+  branch      Branch?       @relation(fields: [branchId], references: [id])
+
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
   @@index([categoryId])
   @@index([status])
   @@index([date])
+  @@index([companyId])
+  @@index([branchId])
 }
 
 // ─── PRINT TEMPLATE BUILDER ──────────────────────
@@ -1205,6 +1361,9 @@ model Contract {
   supplierId    String?
   supplier      Supplier?      @relation(fields: [supplierId], references: [id])
 
+  companyId     String?
+  company       Company?       @relation(fields: [companyId], references: [id])
+
   attachments   ContractAttachment[]
   payments      ContractPayment[]
 
@@ -1215,6 +1374,7 @@ model Contract {
   @@index([supplierId])
   @@index([status])
   @@index([endDate])
+  @@index([companyId])
 }
 
 model ContractAttachment {

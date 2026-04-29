@@ -14,10 +14,10 @@ const PurchaseSchema = z.object({
   })).min(1, 'Kamida bitta mahsulot bo\'lishi kerak'),
 });
 
-// GET /api/purchases — List all purchases
+// GET /api/purchases — List all purchases (company + branch filtered)
 export async function GET(request: Request) {
   try {
-    const { error } = await checkPermission('view_purchases');
+    const { error, user } = await checkPermission('view_purchases');
     if (error) return error;
 
     const { searchParams } = new URL(request.url);
@@ -27,8 +27,21 @@ export async function GET(request: Request) {
     const status = searchParams.get('status');
     const supplierId = searchParams.get('supplierId');
     const warehouseId = searchParams.get('warehouseId');
+    const branchId = searchParams.get('branchId');
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const where: any = {};
+    // Company isolation
+    if (user.role !== 'SUPER_ADMIN' && user.companyId) {
+      where.companyId = user.companyId;
+    }
+    // Branch filter
+    if (branchId) {
+      where.branchId = branchId;
+    } else if (user.role !== 'SUPER_ADMIN' && user.role !== 'ADMIN' && user.branchId) {
+      where.branchId = user.branchId;
+    }
+
     if (status) where.status = status;
     if (supplierId) where.supplierId = supplierId;
     if (warehouseId) where.warehouseId = warehouseId;
@@ -46,6 +59,7 @@ export async function GET(request: Request) {
         include: {
           supplier: { select: { name: true, phone: true } },
           warehouse: { select: { name: true } },
+          branch: { select: { id: true, name: true } },
           items: {
             include: {
               product: { select: { name: true, sku: true } },
@@ -68,16 +82,16 @@ export async function GET(request: Request) {
         totalPages: Math.ceil(total / limit),
       },
     });
-  } catch (error) {
-    console.error('GET /api/purchases error:', error);
+  } catch {
+    console.error('GET /api/purchases error');
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// POST /api/purchases — Create new purchase
+// POST /api/purchases — Create new purchase (company + branch isolated)
 export async function POST(request: Request) {
   try {
-    const { error } = await checkPermission('create_purchases');
+    const { error, user } = await checkPermission('create_purchases');
     if (error) return error;
 
     const body = await request.json();
@@ -92,6 +106,12 @@ export async function POST(request: Request) {
 
     const { supplierId, warehouseId, notes, items } = result.data;
 
+    // Determine branchId from warehouse
+    const warehouse = await prisma.warehouse.findUnique({
+      where: { id: warehouseId },
+      select: { branchId: true, companyId: true },
+    });
+
     // Generate document number
     const count = await prisma.purchase.count();
     const docNumber = `PR-${String(count + 1).padStart(6, '0')}`;
@@ -101,7 +121,6 @@ export async function POST(request: Request) {
 
     // Create purchase with stock update
     const purchase = await prisma.$transaction(async (tx) => {
-      // Create purchase
       const newPurchase = await tx.purchase.create({
         data: {
           docNumber,
@@ -110,6 +129,8 @@ export async function POST(request: Request) {
           totalAmount,
           status: 'COMPLETED',
           notes: notes || null,
+          companyId: user.companyId || warehouse?.companyId || null,
+          branchId: warehouse?.branchId || user.branchId || null,
           items: {
             create: items.map(item => ({
               productId: item.productId,
