@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { getToken } from 'next-auth/jwt';
 
-async function checkAdmin(req: Request) {
+async function checkAdmin(req: NextRequest) {
   const token = await getToken({ req });
   if (!token) return null;
   const role = (token as any).role;
@@ -11,7 +11,7 @@ async function checkAdmin(req: Request) {
   return token;
 }
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const admin = await checkAdmin(req);
     if (!admin) {
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const admin = await checkAdmin(req);
     if (!admin) {
