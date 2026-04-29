@@ -19,15 +19,22 @@ export async function POST(req: NextRequest) {
     const userId = (token as any).id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { customer: true },
     });
 
-    if (!user?.customer) {
+    if (!user || !user.phone) {
+      return NextResponse.json({ error: 'User phone not found' }, { status: 404 });
+    }
+
+    const customer = await prisma.customer.findFirst({
+      where: { phone: user.phone }
+    });
+
+    if (!customer) {
       return NextResponse.json({ error: 'Customer not found' }, { status: 404 });
     }
 
     const loyaltyAccount = await prisma.loyaltyAccount.findUnique({
-      where: { customerId: user.customer.id },
+      where: { customerId: customer.id },
     });
 
     if (!loyaltyAccount) {
@@ -81,7 +88,7 @@ export async function POST(req: NextRequest) {
 
     // Update account
     await prisma.loyaltyAccount.update({
-      where: { customerId: user.customer.id },
+      where: { customerId: customer.id },
       data: {
         points: { decrement: points },
         totalRedeemed: { increment: points },

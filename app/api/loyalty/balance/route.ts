@@ -12,15 +12,22 @@ export async function GET(req: NextRequest) {
     const userId = (token as any).id;
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      include: { customer: true },
     });
 
-    if (!user?.customer) {
+    if (!user || !user.phone) {
+      return NextResponse.json({ account: null }, { status: 200 });
+    }
+
+    const customer = await prisma.customer.findFirst({
+      where: { phone: user.phone }
+    });
+
+    if (!customer) {
       return NextResponse.json({ account: null }, { status: 200 });
     }
 
     const loyaltyAccount = await prisma.loyaltyAccount.findUnique({
-      where: { customerId: user.customer.id },
+      where: { customerId: customer.id },
       include: {
         transactions: {
           orderBy: { createdAt: 'desc' },
