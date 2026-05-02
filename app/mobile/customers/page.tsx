@@ -2,7 +2,7 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { Search, Plus, Users, Phone, MapPin, UserCircle } from 'lucide-react';
+import { Search, Plus, Users, Phone, MapPin, UserCircle, Layers } from 'lucide-react';
 import Link from 'next/link';
 
 export default function MobileCustomersPage() {
@@ -47,13 +47,19 @@ export default function MobileCustomersPage() {
         </div>
       </div>
 
+      <div className="px-6 mb-4">
+        <Link href="/mobile/customers/groups" className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400 text-[12px] font-black active:scale-95 transition-transform">
+          <Layers size={14} /> Guruhlar
+        </Link>
+      </div>
+
       <div className="px-6 space-y-3">
         {loading ? (
           Array(6).fill(0).map((_, i) => <div key={i} className="h-24 bg-white dark:bg-slate-900 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800" />)
         ) : filtered.length > 0 ? (
           filtered.map(customer => (
-            <div key={customer.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+            <Link key={customer.id} href={`/mobile/customers/${customer.id}`}
+              className="block bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.98] transition-transform">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-11 h-11 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                   <UserCircle size={22} />
@@ -80,7 +86,7 @@ export default function MobileCustomersPage() {
                   </span>
                 )}
               </div>
-            </div>
+            </Link>
           ))
         ) : (
           <div className="text-center py-16">

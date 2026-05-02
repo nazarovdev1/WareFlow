@@ -2,7 +2,7 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { Search, Truck, Plus, Phone, X, Check, Building2 } from 'lucide-react';
+import { Search, Truck, Plus, Phone, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useNotification } from '@/lib/NotificationContext';
 
@@ -82,8 +82,8 @@ export default function MobileSuppliersPage() {
           Array(5).fill(0).map((_, i) => <div key={i} className="h-24 bg-white dark:bg-slate-900 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800" />)
         ) : filtered.length > 0 ? (
           filtered.map(supplier => (
-            <div key={supplier.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+            <Link key={supplier.id} href={`/mobile/suppliers/${supplier.id}`}
+              className="block bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.98] transition-transform">
               <div className="flex items-center gap-3 mb-3">
                 <div className="w-11 h-11 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                   <Truck size={20} />
@@ -111,12 +111,12 @@ export default function MobileSuppliersPage() {
                   <Building2 size={12} /> Qarzlar
                 </Link>
               </div>
-            </div>
+            </Link>
           ))
         ) : (
           <div className="text-center py-16">
             <Truck size={28} className="mx-auto text-slate-300 dark:text-slate-600 mb-3" />
-            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">Ta'minotchilar topilmadi</p>
+            <p className="text-xs font-bold text-slate-400 uppercase tracking-widest">{`Ta\u2019minotchilar topilmadi`}</p>
           </div>
         )}
       </div>
@@ -126,7 +126,7 @@ export default function MobileSuppliersPage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center px-6" onClick={() => setShowAdd(false)}>
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-5"></div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-5">Yangi ta'minotchi</h3>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-5">{`Yangi ta\u2019minotchi`}</h3>
             <div className="space-y-4">
               <div>
                 <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Nomi *</label>

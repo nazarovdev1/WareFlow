@@ -2,7 +2,7 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { Search, Shield, Mail, Building2, CheckCircle2, XCircle } from 'lucide-react';
+import { Search, Shield, Mail, Building2, CheckCircle2, XCircle, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { AdminGuard } from '@/components/mobile/PermissionGuard';
 
@@ -38,7 +38,13 @@ export default function MobileUsersPage() {
   return (
     <AdminGuard>
       <div className="w-full min-h-screen pb-28">
-        <MobileHeader title="Foydalanuvchilar" backHref="/mobile" />
+        <MobileHeader title="Foydalanuvchilar" backHref="/mobile"
+          rightAction={
+            <Link href="/mobile/users/add" className="p-2.5 bg-amber-600 text-white rounded-full shadow-lg shadow-amber-500/30 active:scale-95 transition-transform">
+              <Plus size={20} />
+            </Link>
+          }
+        />
 
         <div className="px-6 mb-4 mt-2">
           <div className="relative">
