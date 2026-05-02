@@ -7,13 +7,28 @@ import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useNotification } from '@/lib/NotificationContext';
 
+interface Customer {
+  id: string;
+  fullName?: string;
+  companyName?: string;
+  phone?: string;
+  region?: string;
+  status?: string;
+  balanceUSD?: number;
+  balanceUZS?: number;
+  group?: {
+    id: string;
+    name: string;
+  };
+}
+
 export default function MobileCustomerDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const router = useRouter();
   const { success, error } = useNotification();
 
-  const [customer, setCustomer] = useState<Record<string, unknown> | null>(null);
+  const [customer, setCustomer] = useState<Customer | null>(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -135,7 +150,7 @@ export default function MobileCustomerDetailPage() {
   return (
     <div className="w-full min-h-screen pb-28">
       <MobileHeader
-        title={editing ? 'Mijozni tahrirlash' : String(customer.fullName || 'Mijoz')}
+        title={editing ? 'Mijozni tahrirlash' : (customer.fullName || 'Mijoz')}
         backHref="/mobile/customers"
         rightAction={
           !editing ? (
@@ -164,7 +179,7 @@ export default function MobileCustomerDetailPage() {
                 <input type="text" value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })}
                   className="text-lg font-black text-slate-900 dark:text-white bg-transparent border-b border-slate-200 dark:border-slate-700 focus:outline-none focus:border-indigo-500 w-full" />
               ) : (
-                <div className="text-lg font-black text-slate-900 dark:text-white">{String(customer.fullName)}</div>
+                <div className="text-lg font-black text-slate-900 dark:text-white">{customer.fullName}</div>
               )}
               <div className="flex items-center gap-2 mt-1">
                 {editing ? (
@@ -175,8 +190,8 @@ export default function MobileCustomerDetailPage() {
                     <option value="BLOCKED">Bloklangan</option>
                   </select>
                 ) : (
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusColor(String(customer.status))}`}>
-                    {statusLabel(String(customer.status))}
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${statusColor(customer.status || 'ACTIVE')}`}>
+                    {statusLabel(customer.status || 'ACTIVE')}
                   </span>
                 )}
               </div>
@@ -204,22 +219,22 @@ export default function MobileCustomerDetailPage() {
               </>
             ) : (
               <>
-                {customer.companyName && (
+                {!!customer.companyName && (
                   <div className="flex items-center gap-3">
                     <Building2 size={14} className="text-slate-400" />
-                    <span className="text-sm text-slate-600 dark:text-slate-300">{String(customer.companyName)}</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">{customer.companyName}</span>
                   </div>
                 )}
-                {customer.phone && (
+                {!!customer.phone && (
                   <div className="flex items-center gap-3">
                     <Phone size={14} className="text-slate-400" />
-                    <a href={`tel:${customer.phone}`} className="text-sm text-indigo-600 dark:text-indigo-400">{String(customer.phone)}</a>
+                    <a href={`tel:${customer.phone}`} className="text-sm text-indigo-600 dark:text-indigo-400">{customer.phone}</a>
                   </div>
                 )}
-                {customer.region && (
+                {!!customer.region && (
                   <div className="flex items-center gap-3">
                     <MapPin size={14} className="text-slate-400" />
-                    <span className="text-sm text-slate-600 dark:text-slate-300">{String(customer.region)}</span>
+                    <span className="text-sm text-slate-600 dark:text-slate-300">{customer.region}</span>
                   </div>
                 )}
               </>
@@ -233,25 +248,25 @@ export default function MobileCustomerDetailPage() {
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
               <div className="text-[10px] text-slate-400 font-bold">USD</div>
-              <div className={`text-xl font-black ${Number(customer.balanceUSD || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                ${Math.abs(Number(customer.balanceUSD || 0)).toLocaleString()}
+              <div className={`text-xl font-black ${(customer.balanceUSD || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                ${Math.abs(customer.balanceUSD || 0).toLocaleString()}
               </div>
             </div>
             <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
               <div className="text-[10px] text-slate-400 font-bold">UZS</div>
-              <div className={`text-xl font-black ${Number(customer.balanceUZS || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                {Math.abs(Number(customer.balanceUZS || 0)).toLocaleString()}
+              <div className={`text-xl font-black ${(customer.balanceUZS || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                {Math.abs(customer.balanceUZS || 0).toLocaleString()}
               </div>
             </div>
           </div>
         </div>
 
         {/* Group info */}
-        {customer.group && (
-          <Link href={`/mobile/customers/groups/${(customer.group as Record<string, unknown>).id}`}
+        {!!customer.group && (
+          <Link href={`/mobile/customers/groups/${customer.group.id}`}
             className="block bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.98] transition-transform">
             <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Guruh</div>
-            <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{String((customer.group as Record<string, unknown>).name)}</div>
+            <div className="text-sm font-bold text-indigo-600 dark:text-indigo-400">{customer.group.name}</div>
           </Link>
         )}
 
@@ -276,7 +291,7 @@ export default function MobileCustomerDetailPage() {
             </div>
             <h3 className="text-lg font-black text-center text-slate-900 dark:text-white mb-2">Mijozni o\u2019chirish</h3>
             <p className="text-sm text-center text-slate-500 dark:text-slate-400 mb-6">
-              {`${String(customer.fullName)} mijozini o\u2019chirishni tasdiqlaysizmi? Bu amalni qaytarib bo\u2019lmaydi.`}
+              {`${customer.fullName} mijozini o\u2019chirishni tasdiqlaysizmi? Bu amalni qaytarib bo\u2019lmaydi.`}
             </p>
             <div className="flex gap-3">
               <button onClick={() => setShowDeleteConfirm(false)}
