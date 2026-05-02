@@ -9,7 +9,7 @@ import { useSession, signOut } from 'next-auth/react';
 interface MoreItem {
   name: string;
   href: string;
-  icon: React.ComponentType<{ size?: number; strokeWidth?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: number | string; strokeWidth?: number | string; className?: string }>;
   color: string;
   perm?: string | null;
   adminOnly?: boolean;

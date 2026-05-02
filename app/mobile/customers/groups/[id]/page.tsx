@@ -7,13 +7,31 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useNotification } from '@/lib/NotificationContext';
 
+interface CustomerGroup {
+  id: string;
+  name: string;
+  description?: string;
+  defaultDiscount?: number;
+}
+
+interface Customer {
+  id: string;
+  fullName?: string;
+  companyName?: string;
+  phone?: string;
+  region?: string;
+  status?: string;
+  balanceUSD?: number;
+  balanceUZS?: number;
+}
+
 export default function MobileGroupDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const { success, error } = useNotification();
 
-  const [group, setGroup] = useState<Record<string, unknown> | null>(null);
-  const [customers, setCustomers] = useState<Record<string, unknown>[]>([]);
+  const [group, setGroup] = useState<CustomerGroup | null>(null);
+  const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -96,7 +114,7 @@ export default function MobileGroupDetailPage() {
   return (
     <div className="w-full min-h-screen pb-28">
       <MobileHeader
-        title={String(group.name)}
+        title={group.name}
         backHref="/mobile/customers/groups"
         rightAction={
           <button onClick={() => setShowAdd(true)}
@@ -114,8 +132,8 @@ export default function MobileGroupDetailPage() {
               <Users size={24} />
             </div>
             <div>
-              <div className="text-lg font-black text-slate-900 dark:text-white">{String(group.name)}</div>
-              <div className="text-[12px] text-slate-500 dark:text-slate-400">{String(group.description || `Tavsif yo\u2019q`)}</div>
+              <div className="text-lg font-black text-slate-900 dark:text-white">{group.name}</div>
+              <div className="text-[12px] text-slate-500 dark:text-slate-400">{group.description || `Tavsif yo\u2019q`}</div>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
@@ -125,7 +143,7 @@ export default function MobileGroupDetailPage() {
             </div>
             <div className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
               <div className="text-[10px] text-slate-400 font-bold">Chegirma</div>
-              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">{String(group.defaultDiscount)}%</div>
+              <div className="text-xl font-black text-emerald-600 dark:text-emerald-400">{group.defaultDiscount || 0}%</div>
             </div>
           </div>
         </div>
@@ -135,31 +153,31 @@ export default function MobileGroupDetailPage() {
           <div className="text-[10px] font-black uppercase tracking-widest text-slate-400 px-1">Guruh mijozlari</div>
           {customers.length > 0 ? (
             customers.map(c => (
-              <Link key={String(c.id)} href={`/mobile/customers/${c.id}`}
+              <Link key={c.id} href={`/mobile/customers/${c.id}`}
                 className="block bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.98] transition-transform">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center text-indigo-600 dark:text-indigo-400">
                     <UserCircle size={20} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <div className="text-[13px] font-bold text-slate-800 dark:text-white truncate">{String(c.fullName)}</div>
-                    <div className="text-[11px] text-slate-400">{String(c.companyName || 'Jismoniy shaxs')}</div>
+                    <div className="text-[13px] font-bold text-slate-800 dark:text-white truncate">{c.fullName}</div>
+                    <div className="text-[11px] text-slate-400">{c.companyName || 'Jismoniy shaxs'}</div>
                   </div>
                   <div className="text-right">
-                    <div className={`text-[13px] font-black ${Number(c.balanceUSD || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
-                      ${Math.abs(Number(c.balanceUSD || 0)).toLocaleString()}
+                    <div className={`text-[13px] font-black ${(c.balanceUSD || 0) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      ${Math.abs(c.balanceUSD || 0).toLocaleString()}
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-4 pt-2 mt-2 border-t border-slate-50 dark:border-slate-800/50">
-                  {c.phone && (
+                  {!!c.phone && (
                     <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                      <Phone size={10} /> {String(c.phone)}
+                      <Phone size={10} /> {c.phone}
                     </span>
                   )}
-                  {c.region && (
+                  {!!c.region && (
                     <span className="flex items-center gap-1 text-[10px] text-slate-400">
-                      <MapPin size={10} /> {String(c.region)}
+                      <MapPin size={10} /> {c.region}
                     </span>
                   )}
                 </div>
@@ -180,7 +198,7 @@ export default function MobileGroupDetailPage() {
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-t-3xl sm:rounded-3xl p-6 max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-5"></div>
             <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">Mijoz qo\u2019shish</h3>
-            <p className="text-[12px] text-slate-400 mb-5">{String(group.name)} guruhiga</p>
+            <p className="text-[12px] text-slate-400 mb-5">{group.name} guruhiga</p>
             <div className="space-y-4">
               <div>
                 <label className="text-[11px] font-black uppercase tracking-widest text-slate-400 mb-1.5 block">Ism *</label>
