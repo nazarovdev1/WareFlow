@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 // GET /api/price-lists
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const priceLists = await prisma.priceList.findMany({
       include: { _count: { select: { items: true } } },
       orderBy: { createdAt: 'desc' },
@@ -17,6 +20,8 @@ export async function GET() {
 // POST /api/price-lists
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const body = await req.json();
     if (!body.name) {
       return NextResponse.json({ error: 'Prays list nomi majburiy' }, { status: 400 });

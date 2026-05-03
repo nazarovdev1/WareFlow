@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 // GET /api/price-lists/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const { id } = await params;
     const priceList = await prisma.priceList.findUnique({
       where: { id },
@@ -21,6 +24,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // PUT /api/price-lists/[id]
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const { id } = await params;
     const body = await req.json();
     const priceList = await prisma.priceList.update({
@@ -44,6 +49,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 // DELETE /api/price-lists/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const { id } = await params;
     await prisma.priceListItem.deleteMany({ where: { priceListId: id } });
     await prisma.priceList.delete({ where: { id } });

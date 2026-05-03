@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { Building, TrendingUp, Users, Package, Filter, X } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileBranchReport() {
+  const { error } = useNotification();
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -20,7 +22,7 @@ export default function MobileBranchReport() {
     fetch(`/api/reports/branch?${params}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Filial hisobotini yuklashda xato'); setLoading(false); });
   }, [dateFrom, dateTo]);
 
   const summary = (data as Record<string, Record<string, number>>)?.summary || {};

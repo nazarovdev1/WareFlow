@@ -153,7 +153,7 @@ export default function MobileAddAgentPage() {
               onClick={() => setFormData({ ...formData, isActive: !formData.isActive })}
               className={`w-12 h-7 rounded-full transition-colors ${formData.isActive ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
             >
-              <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${formData.isActive ? 'translate-x-6.5' : 'translate-x-1'}`} />
+              <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${formData.isActive ? 'translate-x-[26px]' : 'translate-x-1'}`} />
             </button>
           </div>
         </div>

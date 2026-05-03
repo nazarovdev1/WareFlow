@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const contract = await prisma.contract.findUnique({
       where: { id: params.id },
       select: { id: true },

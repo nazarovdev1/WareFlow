@@ -2,8 +2,7 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { Search, CreditCard, Check, Clock, AlertTriangle, DollarSign, Plus, X } from 'lucide-react';
-import Link from 'next/link';
+import { CreditCard, Check, Clock, Plus } from 'lucide-react';
 import { useNotification } from '@/lib/NotificationContext';
 import { AdminGuard } from '@/components/mobile/PermissionGuard';
 
@@ -25,7 +24,7 @@ export default function MobileSubscriptionsPage() {
       setPayments(pData.data || pData || []);
       setUsers(uData.data || uData || []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { error('Xatolik', 'Ma\'lumotlarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = payments.filter(p => statusFilter === 'ALL' || p.status === statusFilter);

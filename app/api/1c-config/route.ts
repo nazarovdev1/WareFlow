@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const authResult = await requireAuth(request);
+    if (isAuthError(authResult)) return authResult;
     const config = await prisma.oneCConfig.findFirst({
       orderBy: { createdAt: 'desc' },
     });
@@ -25,6 +28,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const authResult = await requireAuth(request);
+    if (isAuthError(authResult)) return authResult;
     const body = await request.json();
 
     if (!body.apiUrl || !body.apiKey) {

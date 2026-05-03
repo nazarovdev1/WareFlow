@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ChevronDown } from 'lucide-react';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileAddExpense() {
+  const { error } = useNotification();
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [categories, setCategories] = useState<Record<string, unknown>[]>([]);
@@ -21,7 +23,7 @@ export default function MobileAddExpense() {
     fetch('/api/expense-categories')
       .then(r => r.json())
       .then(d => setCategories(Array.isArray(d) ? d : d.data || []))
-      .catch(() => {});
+      .catch(() => { error('Xatolik', 'Kategoriyalarni yuklashda xato'); });
   }, []);
 
   const handleSave = async () => {

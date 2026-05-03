@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 // GET /api/inventory-audit/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const { id } = await params;
     const audit = await prisma.inventoryAudit.findUnique({
       where: { id },
@@ -24,6 +27,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // PUT /api/inventory-audit/[id] — finalize/complete an audit
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const { id } = await params;
     const body = await req.json();
     const audit = await prisma.inventoryAudit.update({

@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authResult = await requireAuth(req);
+  if (isAuthError(authResult)) return authResult;
+
   try {
     const contract = await prisma.contract.findUnique({
       where: { id: params.id },
@@ -31,6 +35,9 @@ export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
+  const authResult = await requireAuth(req);
+  if (isAuthError(authResult)) return authResult;
+
   try {
     const body = await req.json();
 

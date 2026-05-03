@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
   try { return await fn(); } catch { return fallback; }
@@ -7,6 +8,8 @@ const safe = async <T>(fn: () => Promise<T>, fallback: T): Promise<T> => {
 
 export async function GET(request: Request) {
   try {
+    const authResult = await requireAuth(request);
+    if (isAuthError(authResult)) return authResult;
     const { searchParams } = new URL(request.url);
     const startDateParam = searchParams.get('startDate');
     const endDateParam = searchParams.get('endDate');

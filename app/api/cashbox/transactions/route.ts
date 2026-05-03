@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 const TransactionSchema = z.object({
   cashboxId: z.string(),
@@ -13,6 +14,8 @@ const TransactionSchema = z.object({
 // GET /api/cashbox/transactions
 export async function GET(request: Request) {
   try {
+    const authResult = await requireAuth(request);
+    if (isAuthError(authResult)) return authResult;
     const { searchParams } = new URL(request.url);
     const cashboxId = searchParams.get('cashboxId');
     const limit = parseInt(searchParams.get('limit') || '50');
@@ -36,6 +39,8 @@ export async function GET(request: Request) {
 // POST /api/cashbox/transactions
 export async function POST(request: Request) {
   try {
+    const authResult = await requireAuth(request);
+    if (isAuthError(authResult)) return authResult;
     const body = await request.json();
     const result = TransactionSchema.safeParse(body);
     if (!result.success) return NextResponse.json({ error: 'Noto\'g\'ri ma\'lumot' }, { status: 400 });

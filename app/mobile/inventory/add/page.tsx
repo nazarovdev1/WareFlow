@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ChevronLeft, Package, Tag, Barcode, DollarSign, MapPin, Check, Plus, X } from 'lucide-react';
+import { ChevronLeft, Package, Tag, DollarSign, MapPin, Check } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useNotification } from '@/lib/NotificationContext';
@@ -27,7 +27,7 @@ export default function MobileAddProductPage() {
       const w = wData.data || wData || [];
       setWarehouses(w);
       if (w.length > 0) setForm(prev => ({ ...prev, warehouseId: w[0].id }));
-    }).catch(() => {});
+    }).catch(() => { error('Xatolik', 'Ma\'lumotlarni yuklashda xato'); });
   }, []);
 
   const handleSubmit = async () => {

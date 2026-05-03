@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 // GET /api/customer-groups
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const groups = await prisma.customerGroup.findMany({
       include: { _count: { select: { customers: true } } },
       orderBy: { name: 'asc' },
@@ -17,6 +20,8 @@ export async function GET() {
 // POST /api/customer-groups
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const body = await req.json();
     if (!body.name) {
       return NextResponse.json({ error: 'Guruh nomi majburiy' }, { status: 400 });

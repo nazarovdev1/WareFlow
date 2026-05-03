@@ -53,7 +53,7 @@ export default function MobileGroupDetailPage() {
       setGroup(groupData);
       setCustomers(customersData.data || customersData || []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { error('Xatolik', 'Guruh ma\'lumotlarini yuklashda xato'); setLoading(false); });
   }, [id]);
 
   const handleAddCustomer = async () => {

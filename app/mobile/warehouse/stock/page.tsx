@@ -3,8 +3,10 @@
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { Search, Package, Filter, X, ChevronDown, Building } from 'lucide-react';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileWarehouseStock() {
+  const { error } = useNotification();
   const [stock, setStock] = useState<Record<string, unknown>[]>([]);
   const [summary, setSummary] = useState({ totalQuantity: 0, totalValue: 0 });
   const [warehouses, setWarehouses] = useState<Record<string, unknown>[]>([]);
@@ -17,7 +19,7 @@ export default function MobileWarehouseStock() {
     fetch('/api/warehouses')
       .then(res => res.json())
       .then(data => setWarehouses(Array.isArray(data) ? data : data.data || []))
-      .catch(() => {});
+      .catch(() => { error('Xatolik', 'Omborlarni yuklashda xato'); });
   }, []);
 
   useEffect(() => {
@@ -37,7 +39,7 @@ export default function MobileWarehouseStock() {
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Qoldiq ma\'lumotlarini yuklashda xato'); setLoading(false); });
   }, [search, selectedWarehouse]);
 
   return (

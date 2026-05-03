@@ -2,8 +2,7 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { ChevronLeft, ArrowRightLeft, Search, Plus, Minus, Trash2, MapPin, Check } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowRightLeft, Search, Plus, Minus, Trash2, MapPin, Check } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useNotification } from '@/lib/NotificationContext';
 
@@ -26,7 +25,7 @@ export default function MobileWarehouseAddPage() {
       const w = wData.data || wData || [];
       setWarehouses(w);
       setProducts(pData.data || pData || []);
-    }).catch(() => {});
+    }).catch(() => { error('Xatolik', 'Ma\'lumotlarni yuklashda xato'); });
   }, []);
 
   const addToCart = (product: any) => {

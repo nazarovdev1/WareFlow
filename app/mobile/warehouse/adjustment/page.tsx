@@ -3,8 +3,10 @@
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { Sliders, Plus, ChevronDown } from 'lucide-react';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileStockAdjustment() {
+  const { error } = useNotification();
   const [adjustments, setAdjustments] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -23,15 +25,15 @@ export default function MobileStockAdjustment() {
     fetch('/api/inventory-adjustments')
       .then(r => r.json())
       .then(d => { setAdjustments(Array.isArray(d) ? d : d.data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Tahrirlashlar ro\'yxatini yuklashda xato'); setLoading(false); });
     fetch('/api/warehouses')
       .then(r => r.json())
       .then(d => setWarehouses(Array.isArray(d) ? d : d.data || []))
-      .catch(() => {});
+      .catch(() => { error('Xatolik', 'Omborlarni yuklashda xato'); });
     fetch('/api/products?limit=100')
       .then(r => r.json())
       .then(d => setProducts(Array.isArray(d) ? d : d.data || []))
-      .catch(() => {});
+      .catch(() => { error('Xatolik', 'Mahsulotlarni yuklashda xato'); });
   }, []);
 
   const handleCreate = async () => {

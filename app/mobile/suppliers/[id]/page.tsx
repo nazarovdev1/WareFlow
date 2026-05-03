@@ -38,7 +38,7 @@ export default function MobileSupplierDetailPage() {
         });
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Ta\'minotchi ma\'lumotlarini yuklashda xato'); setLoading(false); });
   }, [id]);
 
   const handleSave = async () => {

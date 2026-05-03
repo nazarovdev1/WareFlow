@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, ArrowUpRight, Truck, DollarSign, Calendar } from 'lucide-react';
-import Link from 'next/link';
+import { Search, Truck, DollarSign, Calendar } from 'lucide-react';
 import MobileHeader from '@/components/mobile/MobileHeader';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileCreditorsPage() {
+  const { error } = useNotification();
   const [transactions, setTransactions] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -17,7 +18,7 @@ export default function MobileCreditorsPage() {
         setTransactions(data.data || data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Qarzdorlarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = transactions.filter(t =>

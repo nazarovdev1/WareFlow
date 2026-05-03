@@ -54,7 +54,7 @@ export default function MobileMenuPage() {
     if (passwords.newPass !== passwords.confirm) { error('Xatolik', "Parollar mos emas"); return; }
     setSavingPassword(true);
     try {
-      const res = await fetch('/api/settings/security', {
+      const res = await fetch('/api/settings/password', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword: passwords.current, newPassword: passwords.newPass }),

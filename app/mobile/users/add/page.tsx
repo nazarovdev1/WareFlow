@@ -98,7 +98,7 @@ export default function MobileAddUserPage() {
     fetch('/api/warehouses')
       .then(r => r.json())
       .then(data => setWarehouses(data.data || data || []))
-      .catch(() => {});
+      .catch(() => { error('Xatolik', 'Omborlarni yuklashda xato'); });
   }, []);
 
   const togglePermission = (perm: string) => {
@@ -247,7 +247,7 @@ export default function MobileAddUserPage() {
               <span className="text-[12px] font-bold text-slate-700 dark:text-slate-200">Holat</span>
               <button onClick={() => setForm(prev => ({ ...prev, isActive: !prev.isActive }))}
                 className={`w-12 h-7 rounded-full transition-colors ${form.isActive ? 'bg-emerald-600' : 'bg-slate-300 dark:bg-slate-600'}`}>
-                <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${form.isActive ? 'translate-x-6.5' : 'translate-x-1'}`} />
+                <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${form.isActive ? 'translate-x-[26px]' : 'translate-x-1'}`} />
               </button>
             </div>
           </div>

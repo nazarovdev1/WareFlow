@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 const SupplierTransactionSchema = z.object({
   supplierId: z.string().min(1, "Ta'minotchi tanlanishi shart"),
@@ -15,6 +16,8 @@ const SupplierTransactionSchema = z.object({
 // GET /api/supplier-transactions
 export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const { searchParams } = new URL(req.url);
     const supplierId = searchParams.get('supplierId');
     const overdue = searchParams.get('overdue');
@@ -52,6 +55,8 @@ export async function GET(req: NextRequest) {
 // POST /api/supplier-transactions
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const body = await req.json();
 
     // Validate with Zod

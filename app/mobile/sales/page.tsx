@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, ShoppingCart, Plus, Eye, Filter, Calendar, Users, TrendingUp, DollarSign, BarChart3, X, AlertTriangle } from 'lucide-react';
+import { Search, ShoppingCart, Plus, Eye, Calendar, Users, TrendingUp, BarChart3, AlertTriangle } from 'lucide-react';
 import Link from 'next/link';
 import MobileHeader from '@/components/mobile/MobileHeader';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileSalesPage() {
+  const { error } = useNotification();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -22,7 +24,7 @@ export default function MobileSalesPage() {
         setOrders(data.data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Savdolarni yuklashda xato'); setLoading(false); });
   }, []);
 
   useEffect(() => {
@@ -30,7 +32,7 @@ export default function MobileSalesPage() {
       fetch('/api/dashboard/stats?period=month')
         .then(r => r.json())
         .then(d => setAnalytics(d))
-        .catch(() => {});
+        .catch(() => { error('Xatolik', 'Analitikani yuklashda xato'); });
     }
   }, [tab]);
 

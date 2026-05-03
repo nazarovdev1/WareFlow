@@ -1,11 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search, ArrowDownRight, Eye, Calendar, Truck, X, AlertTriangle, Plus } from 'lucide-react';
+import { Search, ArrowDownRight, Eye, Calendar, Truck, AlertTriangle, Plus } from 'lucide-react';
 import Link from 'next/link';
 import MobileHeader from '@/components/mobile/MobileHeader';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobilePurchasesPage() {
+  const { error } = useNotification();
   const [purchases, setPurchases] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -20,7 +22,7 @@ export default function MobilePurchasesPage() {
         setPurchases(data.data || data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Xaridlarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = purchases.filter(p =>

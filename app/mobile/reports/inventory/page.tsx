@@ -4,10 +4,12 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { PieChart, Package, AlertTriangle, TrendingDown, Filter, X } from 'lucide-react';
 import { ResponsiveContainer, PieChart as RPieChart, Pie, Cell, Tooltip } from 'recharts';
+import { useNotification } from '@/lib/NotificationContext';
 
 const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
 
 export default function MobileInventoryReport() {
+  const { error } = useNotification();
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -22,7 +24,7 @@ export default function MobileInventoryReport() {
     fetch(`/api/reports/inventory?${params}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Inventar hisobotini yuklashda xato'); setLoading(false); });
   }, [dateFrom, dateTo]);
 
   const summary = (data as Record<string, Record<string, number>>)?.summary || {};

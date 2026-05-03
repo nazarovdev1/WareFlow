@@ -1,11 +1,13 @@
 'use client';
 
 import MobileHeader from '@/components/mobile/MobileHeader';
-import { Bell, ArrowDownRight, Package, ShoppingCart, Users, Wallet, Activity, ChevronRight, TrendingUp, ArrowRightLeft, Trophy, Building, RefreshCw, AlertTriangle, UserPlus, FileText } from 'lucide-react';
+import { ArrowDownRight, Package, ShoppingCart, Users, Wallet, Activity, TrendingUp, RefreshCw, AlertTriangle, FileText } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileDashboard() {
+  const { error } = useNotification();
   const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [converterDir, setConverterDir] = useState<'USD_UZS' | 'UZS_USD'>('USD_UZS');
@@ -18,7 +20,7 @@ export default function MobileDashboard() {
         setStats(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Statistikani yuklashda xato'); setLoading(false); });
   }, []);
 
   const balance = stats?.financialSummary?.cashUSD || 0;

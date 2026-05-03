@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { Search, Package, Plus, Edit3 } from 'lucide-react';
 import Link from 'next/link';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileInventoryPage() {
+  const { error } = useNotification();
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -17,7 +19,7 @@ export default function MobileInventoryPage() {
         setProducts(data.data || data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Mahsulotlarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = products.filter(p =>

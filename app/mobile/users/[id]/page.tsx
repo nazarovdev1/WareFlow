@@ -48,7 +48,7 @@ export default function MobileUserDetailPage() {
       setSelectedWarehouse(userData.warehouse?.id || '');
       setWarehouses(wData.data || wData || []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { error('Xatolik', 'Ma\'lumotlarni yuklashda xato'); setLoading(false); });
   }, [id]);
 
   const togglePermission = (key: string) => {

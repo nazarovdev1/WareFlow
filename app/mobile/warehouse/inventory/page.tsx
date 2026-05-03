@@ -3,8 +3,10 @@
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { ClipboardCheck, Plus, ChevronDown, Check, Clock } from 'lucide-react';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileInventoryAudit() {
+  const { error } = useNotification();
   const [audits, setAudits] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [showNew, setShowNew] = useState(false);
@@ -16,11 +18,11 @@ export default function MobileInventoryAudit() {
     fetch('/api/inventory-audit')
       .then(r => r.json())
       .then(d => { setAudits(Array.isArray(d) ? d : d.data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Inventarizatsiyani yuklashda xato'); setLoading(false); });
     fetch('/api/warehouses')
       .then(r => r.json())
       .then(d => setWarehouses(Array.isArray(d) ? d : d.data || []))
-      .catch(() => {});
+      .catch(() => { error('Xatolik', 'Omborlarni yuklashda xato'); });
   }, []);
 
   const handleCreate = async () => {

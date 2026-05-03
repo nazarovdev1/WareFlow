@@ -2,10 +2,12 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { Search, ArrowRightLeft, Calendar, Eye, X } from 'lucide-react';
+import { Search, ArrowRightLeft, Calendar } from 'lucide-react';
 import Link from 'next/link';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileWarehousePage() {
+  const { error } = useNotification();
   const [transfers, setTransfers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -18,7 +20,7 @@ export default function MobileWarehousePage() {
         setTransfers(data.data || data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Ko\'chirishlarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = transfers.filter(t =>
@@ -58,7 +60,7 @@ export default function MobileWarehousePage() {
                   <ArrowRightLeft size={18} />
                 </div>
                 <div className="flex-1">
-                  <div className="text-[12px] font-bold text-slate-800 dark:text-slate-200">{transfer.docNumber || `WT-${transfer.id.slice(0, 6)}`}</div>
+                  <div className="text-[12px] font-bold text-slate-800 dark:text-slate-200">{transfer.docNumber || `WT-${String(transfer.id).slice(0, 6)}`}</div>
                   <div className="text-[10px] text-slate-400 flex items-center gap-1">
                     <Calendar size={9} />
                     {transfer.date ? new Date(transfer.date).toLocaleDateString('uz-UZ', { day: 'numeric', month: 'short' }) : '-'}
@@ -96,7 +98,7 @@ export default function MobileWarehousePage() {
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center px-6" onClick={() => setSelectedTransfer(null)}>
           <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl p-6 max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-slate-200 dark:bg-slate-700 rounded-full mx-auto mb-5"></div>
-            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">{selectedTransfer.docNumber || `WT-${selectedTransfer.id.slice(0, 6)}`}</h3>
+            <h3 className="text-lg font-black text-slate-900 dark:text-white mb-1">{selectedTransfer.docNumber || `WT-${String(selectedTransfer.id).slice(0, 6)}`}</h3>
             <p className="text-[11px] text-slate-400 mb-4">{selectedTransfer.date ? new Date(selectedTransfer.date).toLocaleDateString('uz-UZ') : '-'}</p>
 
             <div className="flex items-center gap-2 mb-5 p-3 bg-slate-50 dark:bg-slate-800 rounded-xl">

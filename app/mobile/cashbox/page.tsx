@@ -2,8 +2,7 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { Wallet, Plus, Minus, ArrowUpRight, ArrowDownRight, CreditCard, Building2, X } from 'lucide-react';
-import Link from 'next/link';
+import { Wallet, ArrowUpRight, ArrowDownRight, CreditCard, Building2 } from 'lucide-react';
 import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileCashboxPage() {
@@ -19,15 +18,20 @@ export default function MobileCashboxPage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    fetch('/api/cashbox')
-      .then(r => r.json())
-      .then(data => {
+    const loadCashboxes = async () => {
+      try {
+        const r = await fetch('/api/cashbox');
+        const data = await r.json();
         const boxes = data.data || data || [];
         setCashboxes(boxes);
-        if (boxes.length === 0) initDefaults();
+        if (boxes.length === 0) await initDefaults();
+      } catch {
+        error('Xatolik', 'Kassalarni yuklashda xato');
+      } finally {
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      }
+    };
+    loadCashboxes();
   }, []);
 
   useEffect(() => {
@@ -35,7 +39,7 @@ export default function MobileCashboxPage() {
       fetch(`/api/cashbox/transactions?cashboxId=${selectedBox}&limit=30`)
         .then(r => r.json())
         .then(data => setTransactions(data.data || data || []))
-        .catch(() => {});
+        .catch(() => { error('Xatolik', 'Tranzaksiyalarni yuklashda xato'); });
     }
   }, [selectedBox]);
 

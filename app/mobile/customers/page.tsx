@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { Search, Plus, Users, Phone, MapPin, UserCircle, Layers } from 'lucide-react';
 import Link from 'next/link';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileCustomersPage() {
+  const { error } = useNotification();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -17,7 +19,7 @@ export default function MobileCustomersPage() {
         setCustomers(data.data || data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Mijozlarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = customers.filter(c =>

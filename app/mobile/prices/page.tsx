@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { DollarSign, Plus, Search, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobilePriceLists() {
+  const { error } = useNotification();
   const [priceLists, setPriceLists] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -14,7 +16,7 @@ export default function MobilePriceLists() {
     fetch('/api/price-lists')
       .then(r => r.json())
       .then(d => { setPriceLists(Array.isArray(d) ? d : d.data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Narx ro\'yxatini yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = priceLists.filter(pl =>
@@ -43,7 +45,7 @@ export default function MobilePriceLists() {
           {loading ? (
             Array(4).fill(0).map((_, i) => <div key={i} className="h-20 bg-white dark:bg-slate-900 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800" />)
           ) : filtered.length > 0 ? filtered.map((pl) => (
-            <div key={String(pl.id)} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <Link key={String(pl.id)} href={`/mobile/prices/${String(pl.id)}`} className="block bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-100 dark:border-slate-800 active:scale-[0.98] transition-transform">
               <div className="flex justify-between items-center">
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold text-slate-900 dark:text-white truncate">{String(pl.name || '-')}</p>
@@ -56,7 +58,7 @@ export default function MobilePriceLists() {
                 </div>
                 <ChevronRight size={18} className="text-slate-300" />
               </div>
-            </div>
+            </Link>
           )) : (
             <div className="text-center py-12 text-slate-400">
               <DollarSign size={32} className="mx-auto mb-3 opacity-30" />

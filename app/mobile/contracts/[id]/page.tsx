@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { FileText, DollarSign, Calendar, Building } from 'lucide-react';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileContractDetail() {
+  const { error } = useNotification();
   const params = useParams();
   const [contract, setContract] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
@@ -15,7 +17,7 @@ export default function MobileContractDetail() {
       fetch(`/api/contracts/${params.id}`)
         .then(r => r.json())
         .then(d => { setContract(d); setLoading(false); })
-        .catch(() => setLoading(false));
+        .catch(() => { error('Xatolik', 'Shartnoma ma\'lumotlarini yuklashda xato'); setLoading(false); });
     }
   }, [params.id]);
 
@@ -44,7 +46,23 @@ export default function MobileContractDetail() {
     );
   }
 
-  if (!contract) return null;
+  if (!contract) {
+    return (
+      <div className="w-full min-h-screen pb-28">
+        <MobileHeader title="Shartnoma" backHref="/mobile/contracts" />
+        <div className="px-6 mt-8 text-center">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+            <FileText size={28} className="text-slate-400" />
+          </div>
+          <h2 className="text-lg font-black text-slate-900 dark:text-white mb-2">Shartnoma topilmadi</h2>
+          <p className="text-sm text-slate-500 mb-6">Bu shartnoma mavjud emas yoki o'chirilgan</p>
+          <a href="/mobile/contracts" className="inline-flex px-5 py-2.5 bg-indigo-600 text-white text-sm font-bold rounded-xl active:scale-95 transition-transform">
+            Orqaga qaytish
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const status = String(contract.status || 'PENDING');
 

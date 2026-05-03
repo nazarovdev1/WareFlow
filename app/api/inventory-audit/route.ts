@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 // GET /api/inventory-audit
 export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const audits = await prisma.inventoryAudit.findMany({
       include: {
         warehouse: true,
@@ -20,6 +23,8 @@ export async function GET(req: NextRequest) {
 // POST /api/inventory-audit
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const body = await req.json();
     const { docNumber, warehouseId, responsiblePerson, items } = body;
 

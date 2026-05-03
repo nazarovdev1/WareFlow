@@ -4,8 +4,10 @@ import { useState, useEffect } from 'react';
 import { Search, Users, Phone, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import MobileHeader from '@/components/mobile/MobileHeader';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileDebtorsPage() {
+  const { error } = useNotification();
   const [customers, setCustomers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -18,7 +20,7 @@ export default function MobileDebtorsPage() {
         setCustomers(all.filter((c: any) => (c.balanceUSD < 0 || c.balanceUZS < 0)));
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Qarzdorlarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = customers.filter(c =>
@@ -58,8 +60,8 @@ export default function MobileDebtorsPage() {
           Array(5).fill(0).map((_, i) => <div key={i} className="h-24 bg-white dark:bg-slate-900 rounded-2xl animate-pulse border border-slate-100 dark:border-slate-800" />)
         ) : filtered.length > 0 ? (
           filtered.map(customer => (
-            <div key={customer.id}
-              className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800">
+            <Link key={customer.id} href={`/mobile/customers/${customer.id}`}
+              className="block bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-100 dark:border-slate-800 active:scale-[0.98] transition-transform">
               <div className="flex items-center gap-3">
                 <div className="w-11 h-11 rounded-xl bg-rose-50 dark:bg-rose-500/10 flex items-center justify-center text-rose-600 dark:text-rose-400">
                   <TrendingDown size={20} />
@@ -84,7 +86,7 @@ export default function MobileDebtorsPage() {
                   )}
                 </div>
               </div>
-            </div>
+            </Link>
           ))
         ) : (
           <div className="text-center py-16">

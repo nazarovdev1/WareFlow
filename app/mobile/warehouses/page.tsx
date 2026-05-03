@@ -2,8 +2,7 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { Plus, MapPin, Building, Package, Edit3, Trash2, X, Check, Search } from 'lucide-react';
-import Link from 'next/link';
+import { Plus, MapPin, Building, Package, Edit3, Trash2, Search } from 'lucide-react';
 import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileWarehousesPage() {
@@ -24,7 +23,7 @@ export default function MobileWarehousesPage() {
         setWarehouses(Array.isArray(data) ? data : data.data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Omborlarni yuklashda xato'); setLoading(false); });
   };
 
   useEffect(() => { loadWarehouses(); }, []);

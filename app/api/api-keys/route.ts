@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import crypto from 'crypto';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 function generateApiKey(): { key: string; prefix: string; hashed: string } {
   const key = `sk_${crypto.randomBytes(24).toString('hex')}`;
@@ -9,8 +10,10 @@ function generateApiKey(): { key: string; prefix: string; hashed: string } {
   return { key, prefix, hashed };
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const apiKeys = await prisma.apiKey.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -27,6 +30,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const authResult = await requireAuth(request);
+    if (isAuthError(authResult)) return authResult;
     const body = await request.json();
     const { name, permissions, expiresAt } = body;
 

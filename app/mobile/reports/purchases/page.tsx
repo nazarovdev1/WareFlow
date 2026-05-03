@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { ShoppingBag, DollarSign, Truck, Package, Filter, X } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobilePurchasesReport() {
+  const { error } = useNotification();
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -20,7 +22,7 @@ export default function MobilePurchasesReport() {
     fetch(`/api/reports/purchases?${params}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Xaridlar hisobotini yuklashda xato'); setLoading(false); });
   }, [dateFrom, dateTo]);
 
   const summary = (data as Record<string, Record<string, number>>)?.summary || {};

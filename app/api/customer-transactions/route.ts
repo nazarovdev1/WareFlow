@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
 import { z } from 'zod';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
 const CustomerTransactionSchema = z.object({
   customerId: z.string().min(1, "Mijoz tanlanishi shart"),
@@ -15,6 +16,8 @@ const CustomerTransactionSchema = z.object({
 // GET /api/customer-transactions — Debtors list with filters
 export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const { searchParams } = new URL(req.url);
     const customerId = searchParams.get('customerId');
     const type = searchParams.get('type');
@@ -49,6 +52,8 @@ export async function GET(req: NextRequest) {
 // POST /api/customer-transactions — Record a debt or payment
 export async function POST(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const body = await req.json();
 
     // Validate with Zod

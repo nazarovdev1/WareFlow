@@ -39,7 +39,7 @@ export default function MobileCustomerGroupsPage() {
         setGroups(data);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Guruhlarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const handleAdd = async () => {

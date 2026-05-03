@@ -60,7 +60,7 @@ export default function MobileCustomerDetailPage() {
         });
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Mijoz ma\'lumotlarini yuklashda xato'); setLoading(false); });
   }, [id]);
 
   const handleSave = async () => {

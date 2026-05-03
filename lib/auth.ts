@@ -97,8 +97,5 @@ export const authOptions: NextAuthOptions = {
   session: {
     strategy: "jwt",
   },
-  secret: process.env.NEXTAUTH_SECRET || (() => {
-    console.warn('⚠️  WARNING: Using fallback NEXTAUTH_SECRET. Please set NEXTAUTH_SECRET in production environment variables.');
-    return "wareflow-fallback-secret-key-12345";
-  })(),
+  secret: process.env.NEXTAUTH_SECRET,
 };

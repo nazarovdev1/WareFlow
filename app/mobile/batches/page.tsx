@@ -31,16 +31,13 @@ export default function MobileBatchesPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [expiryFilter, setExpiryFilter] = useState('all');
 
-  useEffect(() => {
-    loadBatches();
-  }, []);
-
-  const loadBatches = async () => {
+  const loadBatches = async (filter?: string) => {
     setLoading(true);
     try {
       const params = new URLSearchParams();
-      if (expiryFilter === 'expiring') params.set('expiringSoon', 'true');
-      if (expiryFilter === 'active') params.set('isActive', 'true');
+      const activeFilter = filter ?? expiryFilter;
+      if (activeFilter === 'expiring') params.set('expiringSoon', 'true');
+      if (activeFilter === 'active') params.set('isActive', 'true');
 
       const res = await fetch(`/api/product-batches?${params.toString()}`);
       if (res.ok) {
@@ -55,7 +52,11 @@ export default function MobileBatchesPage() {
   };
 
   useEffect(() => {
-    if (!loading) loadBatches();
+    loadBatches();
+  }, []);
+
+  useEffect(() => {
+    loadBatches(expiryFilter);
   }, [expiryFilter]);
 
   const filteredBatches = batches.filter(b => {

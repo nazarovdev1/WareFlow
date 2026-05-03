@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { TrendingUp, ShoppingCart, DollarSign, Package, Filter, X } from 'lucide-react';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileSalesReport() {
+  const { error } = useNotification();
   const [data, setData] = useState<Record<string, unknown> | null>(null);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
@@ -14,13 +16,13 @@ export default function MobileSalesReport() {
 
   useEffect(() => {
     const params = new URLSearchParams();
-    if (dateFrom) params.set('dateFrom', dateFrom);
-    if (dateTo) params.set('dateTo', dateTo);
+    if (dateFrom) params.set('startDate', dateFrom);
+    if (dateTo) params.set('endDate', dateTo);
     setLoading(true);
     fetch(`/api/reports/sales?${params}`)
       .then(r => r.json())
       .then(d => { setData(d); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Savdo hisobotini yuklashda xato'); setLoading(false); });
   }, [dateFrom, dateTo]);
 
   const summary = (data as Record<string, Record<string, number>>)?.summary || {};
@@ -108,7 +110,7 @@ export default function MobileSalesReport() {
                 <XAxis dataKey="name" tick={{ fontSize: 10 }} />
                 <YAxis tick={{ fontSize: 10 }} />
                 <Tooltip />
-                <Bar dataKey="savdo" fill="#10b981" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="amount" fill="#10b981" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

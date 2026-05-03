@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { Receipt, Plus, Search, X, ChevronDown } from 'lucide-react';
 import Link from 'next/link';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileExpensesList() {
+  const { error } = useNotification();
   const [expenses, setExpenses] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -17,11 +19,11 @@ export default function MobileExpensesList() {
     fetch('/api/expenses')
       .then(r => r.json())
       .then(d => { setExpenses(Array.isArray(d) ? d : d.data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Xarajatlarni yuklashda xato'); setLoading(false); });
     fetch('/api/expense-categories')
       .then(r => r.json())
       .then(d => setCategories(Array.isArray(d) ? d : d.data || []))
-      .catch(() => {});
+      .catch(() => { error('Xatolik', 'Kategoriyalarni yuklashda xato'); });
   }, []);
 
   const filtered = expenses.filter(e => {

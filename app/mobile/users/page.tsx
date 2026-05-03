@@ -5,8 +5,10 @@ import { useState, useEffect } from 'react';
 import { Search, Shield, Mail, Building2, CheckCircle2, XCircle, Plus } from 'lucide-react';
 import Link from 'next/link';
 import { AdminGuard } from '@/components/mobile/PermissionGuard';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileUsersPage() {
+  const { error } = useNotification();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -19,7 +21,7 @@ export default function MobileUsersPage() {
         setUsers(data.data || data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Foydalanuvchilarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = users.filter(u => {

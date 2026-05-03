@@ -41,6 +41,7 @@ export default function MobileSettingsPage() {
 
   useEffect(() => {
     loadProfile();
+    loadSystemSettings();
   }, []);
 
   const loadProfile = async () => {
@@ -53,6 +54,24 @@ export default function MobileSettingsPage() {
           email: data.email || '',
           phone: data.phone || '',
           language: data.language || 'uz',
+        });
+      }
+    } catch {
+      // silently handle
+    }
+  };
+
+  const loadSystemSettings = async () => {
+    try {
+      const res = await fetch('/api/settings/system');
+      if (res.ok) {
+        const data = await res.json();
+        setSystem({
+          currency: data.currency || 'UZS',
+          dateFormat: data.dateFormat || 'dd.MM.yyyy',
+          timezone: data.timezone || 'Asia/Tashkent',
+          autoBackup: data.autoBackup ?? true,
+          backupInterval: data.backupInterval || '24',
         });
       }
     } catch {
@@ -279,7 +298,7 @@ export default function MobileSettingsPage() {
                     onClick={() => setNotifications({ ...notifications, [item.key]: !notifications[item.key] })}
                     className={`w-12 h-7 rounded-full transition-colors ${notifications[item.key] ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
                   >
-                    <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${notifications[item.key] ? 'translate-x-6.5' : 'translate-x-1'}`} />
+                    <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${notifications[item.key] ? 'translate-x-[26px]' : 'translate-x-1'}`} />
                   </button>
                 </div>
               ))}
@@ -343,10 +362,36 @@ export default function MobileSettingsPage() {
                   onClick={() => setSystem({ ...system, autoBackup: !system.autoBackup })}
                   className={`w-12 h-7 rounded-full transition-colors ${system.autoBackup ? 'bg-indigo-600' : 'bg-slate-300 dark:bg-slate-600'}`}
                 >
-                  <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${system.autoBackup ? 'translate-x-6.5' : 'translate-x-1'}`} />
+                  <div className={`w-5 h-5 bg-white rounded-full shadow-sm transition-transform ${system.autoBackup ? 'translate-x-[26px]' : 'translate-x-1'}`} />
                 </button>
               </div>
             </div>
+            <button
+              onClick={async () => {
+                setSaving(true);
+                try {
+                  const res = await fetch('/api/settings/system', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(system),
+                  });
+                  if (res.ok) {
+                    success('Muvaffaqiyatli', 'Tizim sozlamalari saqlandi');
+                  } else {
+                    error('Xatolik', 'Sozlamalarni saqlashda xatolik');
+                  }
+                } catch {
+                  error('Xatolik', 'Tarmoq xatosi');
+                } finally {
+                  setSaving(false);
+                }
+              }}
+              disabled={saving}
+              className="w-full py-3 bg-indigo-600 text-white font-bold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform disabled:opacity-50"
+            >
+              <Save size={18} />
+              {saving ? 'Saqlanmoqda...' : 'Sozlamalarni saqlash'}
+            </button>
             <button
               onClick={() => {
                 setSaving(true);

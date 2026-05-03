@@ -4,8 +4,10 @@ import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
 import { FileText, Search } from 'lucide-react';
 import Link from 'next/link';
+import { useNotification } from '@/lib/NotificationContext';
 
 export default function MobileContractsList() {
+  const { error } = useNotification();
   const [contracts, setContracts] = useState<Record<string, unknown>[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -14,7 +16,7 @@ export default function MobileContractsList() {
     fetch('/api/contracts')
       .then(r => r.json())
       .then(d => { setContracts(Array.isArray(d) ? d : d.data || []); setLoading(false); })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Shartnomalarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = contracts.filter(c =>

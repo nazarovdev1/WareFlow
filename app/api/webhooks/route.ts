@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/db';
+import { requireAuth, isAuthError } from '@/lib/apiAuth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    const authResult = await requireAuth(req);
+    if (isAuthError(authResult)) return authResult;
     const webhooks = await prisma.webhook.findMany({
       orderBy: { createdAt: 'desc' },
     });
@@ -16,6 +19,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
+    const authResult = await requireAuth(request);
+    if (isAuthError(authResult)) return authResult;
     const body = await request.json();
     const { name, url, secret, events } = body;
 
@@ -41,6 +46,8 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
   try {
+    const authResult = await requireAuth(request);
+    if (isAuthError(authResult)) return authResult;
     const body = await request.json();
     const { id, isActive } = body;
 

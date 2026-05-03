@@ -22,7 +22,7 @@ export default function MobileSuppliersPage() {
         setSuppliers(data.data || data || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch(() => { error('Xatolik', 'Ta\'minotchilarni yuklashda xato'); setLoading(false); });
   }, []);
 
   const filtered = suppliers.filter(s =>
@@ -106,9 +106,9 @@ export default function MobileSuppliersPage() {
                     <Phone size={11} /> {supplier.phone}
                   </a>
                 )}
-                <Link href="/mobile/suppliers/creditors"
+                <Link href={`/mobile/suppliers/${supplier.id}`}
                   className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 text-[11px] font-black active:scale-95 transition-transform">
-                  <Building2 size={12} /> Qarzlar
+                  <Building2 size={12} /> Batafsil
                 </Link>
               </div>
             </Link>

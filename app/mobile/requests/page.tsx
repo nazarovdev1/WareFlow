@@ -2,8 +2,7 @@
 
 import MobileHeader from '@/components/mobile/MobileHeader';
 import { useState, useEffect } from 'react';
-import { Search, UserPlus, Check, X, Clock, Shield, Building2 } from 'lucide-react';
-import Link from 'next/link';
+import { UserPlus, Check, X } from 'lucide-react';
 import { useNotification } from '@/lib/NotificationContext';
 import { AdminGuard } from '@/components/mobile/PermissionGuard';
 
@@ -25,7 +24,7 @@ export default function MobileRequestsPage() {
       setRequests(rData.data || rData || []);
       setWarehouses(wData.data || wData || []);
       setLoading(false);
-    }).catch(() => setLoading(false));
+    }).catch(() => { error('Xatolik', 'So\'rovlarni yuklashda xato'); setLoading(false); });
   }, [statusFilter]);
 
   const handleAction = async (action: 'APPROVED' | 'REJECTED') => {
